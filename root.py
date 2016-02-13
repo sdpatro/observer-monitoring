@@ -10,6 +10,7 @@ from tornado.httpserver import HTTPServer
 import os
 import datetime
 from pymongo import MongoClient
+import json
 
 class EchoServer(TCPServer):
     @gen.coroutine
@@ -27,9 +28,13 @@ class EchoServer(TCPServer):
 
     @gen.coroutine
     def echo(self, stream,collection):
-        data = yield stream.read_until('\n'.encode('utf-8'))
-        print('Inserting data: ' + data)
-        collection.insert({'date':datetime.datetime.now(), 'network-data':str(data)})
+        data = yield stream.read_until('\n')
+        data = data[:-1]
+        data = data.replace("\'","\"")
+        data = data.replace('L','')
+        dataJSON = json.loads(data)
+        print('Inserting data: ' + (data))
+        collection.insert(dataJSON)
 
 
 def get_coll():
