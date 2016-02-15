@@ -9,10 +9,18 @@ import time
 import datetime
 from tornado.tcpclient import TCPClient
 
-def get_stats():
+prev_recv = -1
+prev_sent = -1
+
+
+def get_stats(name):
+    global prev_recv
+    global prev_sent
+
     stats = {}
     stats['date'] = datetime.datetime.now().isoformat()
-    stats['cpu'] = psutil.cpu_percent(interval=1,percpu=True)
+    stats['name'] = name
+    stats['cpu'] = psutil.cpu_percent(interval=None, percpu=True)
     stats['ram'] = psutil.virtual_memory().percent
     stats['disk_io_read'] = psutil.disk_io_counters().read_bytes
     stats['disk_io_write'] = psutil.disk_io_counters().write_bytes
@@ -20,6 +28,19 @@ def get_stats():
     stats['packets_recv'] = [psutil.net_io_counters().packets_recv,psutil.net_io_counters().errin]
     stats['bytes_recv'] = psutil.net_io_counters().bytes_recv
     stats['bytes_sent'] = psutil.net_io_counters().bytes_sent
+
+    if prev_recv != -1:
+        stats['dl_rate'] = stats['bytes_recv'] - prev_recv
+    else:
+        stats['dl_rate'] = 0
+    prev_recv = stats['bytes_recv']
+
+    if prev_sent != -1:
+        stats['ul_rate'] = stats['bytes_sent'] - prev_sent
+    else:
+        stats['ul_rate'] = 0
+    prev_sent = stats['bytes_sent']
+
     stats['disk_usage'] = [psutil.disk_usage('/').used,psutil.disk_usage('/').total,psutil.disk_usage('/').free]
     return stats
 
@@ -36,12 +57,11 @@ def run_remote():
     stream = yield TCPClient().connect(str(dest_IP),dest_port)
     try:
         while True:
-            params = psutil.net_connections(kind='inet')
-            print get_stats()
-            text = str(get_stats()) + '\n'
-            yield stream.write(text)
+            stats = get_stats(remote_name)
+            text = str(stats) + '\n'
+            yield stream.write(text.encode('utf-8'))
+            print text
             time.sleep(1)
-        yield stream.write(text.encode('utf-8'))
     except KeyboardInterrupt:
         print "Keyboard interrupt"
         return
