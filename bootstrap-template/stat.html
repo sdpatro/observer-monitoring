@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>Observer - Stats</title>
+    <meta name="generator" content="Bootply"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <script src="http://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!--[if lt IE 9]>
+    <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="css/styles.css" rel="stylesheet">
+    <script src="js/zingchart.min.js"></script>
+    <script src="js/stat.js"></script>
+</head>
+<body>
+<div class="page-container">
+
+    <!-- top navbar -->
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="offcanvas" data-target=".sidebar-nav">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Observer</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row row-offcanvas row-offcanvas-left">
+            <!-- sidebar -->
+            <div class="col-xs-6 col-sm-3" id="sidebar" role="navigation">
+                <div data-spy="affix" data-offset-top="45" data-offset-bottom="90">
+                    <ul class="nav" id="sidebar-nav">
+                        <li><a href="index.html">Live Monitoring</a></li>
+                        <li><a href="stat.html">Statistical Usage Data</a></li>
+                        <li><a href="perf.html">Performance Testing</a></li>
+                        <li><a href="cost.html">Cost Estimation</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- main area -->
+            <div class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
+                <h1 id="section1" class="row">Statistical Usage Data</h1>
+
+                <div class="row">
+                    <h2>CPU Usage Stats</h2>
+
+                    <div id='cpu_chart'></div>
+                </div>
+                <div class="row">
+                    <h2>RAM Usage Stats</h2>
+
+                    <div id='ram_chart'></div>
+                </div>
+            </div>
+            <!-- /.col-xs-12 main -->
+        </div>
+        <!--/.row-->
+    </div>
+    <!--/.container-->
+</div>
+<!--/.page-container-->
+
+
+<div id="footer"><!--footer-->
+    <div class="container">
+        <div class="row">
+            <ul class="list-unstyled">
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">About</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Services</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Studies</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">References</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Login</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Press</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Contact</a>
+                </li>
+                <li class="col-sm-4 col-xs-6">
+                    <a href="#">Impressum</a>
+                </li>
+            </ul>
+        </div>
+        <!--/row-->
+
+    </div>
+    <!--/container-->
+</div>
+<!--/footer-->
+
+<!-- script references -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+</body>
+</html>
