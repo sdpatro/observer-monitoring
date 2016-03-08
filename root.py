@@ -5,6 +5,7 @@ import datetime
 from pymongo import MongoClient
 import json
 import operator
+import time
 
 from tornado.iostream import StreamClosedError
 from tornado.web import RequestHandler, Application
@@ -12,7 +13,9 @@ import tornado.web
 import tornado.ioloop
 from tornado.tcpserver import TCPServer
 from tornado.httpserver import HTTPServer
+from selenium import webdriver
 
+password = "FACEBOOK_PASSWORD"
 
 class EchoServer(TCPServer):
     # A new remote machine connects here.
@@ -116,6 +119,47 @@ def start_tcp_server(port):
 dbConnection = get_db('127.0.0.1', 27017)
 
 
+def runTest(test_id, driver):
+    output = []
+    if (test_id == 'test_1'):
+        start_time = time.time()
+        driver.get("http://aspiringapps.com/web/home/log-in.html")
+        end_time = time.time()
+        output.append("Login page load time: " + str(end_time - start_time))
+        driver.find_element_by_id("email").send_keys("a@gmail.com")
+        el = driver.find_element_by_id("password")
+        el.send_keys("a")
+        start_time = time.time()
+        el.submit()
+        end_time = time.time()
+        driver.close()
+        output.append("Portal page load time: " + str(end_time - start_time))
+    elif (test_id == 'test_2'):
+        start_time = time.time()
+        driver.get("http://www.facebook.com")
+        end_time = time.time()
+        output.append("Facebook home page load time: " + str(end_time - start_time))
+        driver.find_element_by_id("email").send_keys("sidharth.patro@outlook.com")
+        el = driver.find_element_by_id("pass")
+        el.send_keys(password)
+        start_time = time.time()
+        el.submit()
+        end_time = time.time()
+        output.append("Facebook news feed load time: " + str(end_time - start_time))
+        start_time = time.time()
+        driver.get("http://www.linkedin.com")
+        end_time = time.time()
+        output.append("LinkedIn login page load time: " + str(end_time - start_time))
+        driver.find_element_by_id("login-email").send_keys("sidharth.patro@outlook.com")
+        el = driver.find_element_by_id("login-password")
+        el.send_keys(password)
+        start_time = time.time()
+        el.submit()
+        end_time = time.time()
+        output.append("LinkedIn news feed load time: " + str(end_time - start_time))
+    driver.quit()
+    return output
+
 class APIhandler(RequestHandler):
     def post(self):
         if self.get_argument("action", None) is not None:
@@ -134,6 +178,16 @@ class APIhandler(RequestHandler):
                     record['_id'] = str(record['_id'])
                     stat_data.append(record)
                 self.finish(dict(stat_data=stat_data))
+            if action == "RUN_TEST":
+                test_id = self.get_argument('test-id')
+                if (self.get_argument('driver') == 'FIREFOX'):
+                    web_driver = webdriver.Firefox()
+                elif (self.get_argument('driver') == 'PHANTOMJS'):
+                    web_driver = webdriver.PhantomJS()
+                output = ""
+                output = runTest(test_id, web_driver)
+                self.finish(dict(test_output=output))
+
         pass
 
 def start_http_server(port):
