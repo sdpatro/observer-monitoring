@@ -15,7 +15,7 @@ from tornado.tcpserver import TCPServer
 from tornado.httpserver import HTTPServer
 from selenium import webdriver
 
-password = "FACEBOOK_PASSWORD"
+password = "PASSWORD"
 
 class EchoServer(TCPServer):
     # A new remote machine connects here.
@@ -187,6 +187,8 @@ class APIhandler(RequestHandler):
                 output = ""
                 output = runTest(test_id, web_driver)
                 self.finish(dict(test_output=output))
+            if action == "GET_REMOTE_MACHINES":
+                self.finish((dict(response_data=dbConnection.collection_names())))
 
         pass
 

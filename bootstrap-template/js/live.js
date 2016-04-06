@@ -111,7 +111,6 @@ function pollLiveData(){
                     if(liveDataCache.length > 60){
                         liveDataCache = liveDataCache.splice(0,1);
                     }
-                    console.log(liveDataCache.length);
                     setTimeout(pollLiveData(),1000);
                    },
         'error':function(response){
