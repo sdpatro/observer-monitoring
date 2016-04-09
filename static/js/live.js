@@ -1,4 +1,3 @@
-
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
@@ -101,11 +100,11 @@ function runGraph_net(){
 
 
 function pollLiveData(){
-    data = {'client-name':'remote-laptop','action':'GET_LIVE_DATA'};
+    data = {'client-name':_common["currentMachine"],'action':'GET_LIVE_DATA'};
     $.ajax({
         'data':data,
         'type' : 'post',
-        'url' : 'http://localhost:9000/api',
+        'url' : _apiEndPoint,
         'success':function(response){
                     liveDataCache.push(response);
                     if(liveDataCache.length > 60){

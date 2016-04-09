@@ -53,6 +53,10 @@ body {
   background: #1E1E1E;
   color: #f9f9f9;
 }
+
+li{
+  color: #232323;
+}
 a {
   color:#efefef;
 }

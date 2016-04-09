@@ -2,15 +2,12 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
+  getStatData(document.cookie);
 });
 
 statData = [];
 cpuData = [[],[]];
 ramData = [];
-
-window.onload = function(){
-    getStatData();
-}
 
 function renderGraphs(){
 
@@ -64,8 +61,8 @@ function renderGraphs(){
     });
 }
 
-function getStatData(){
-    data = {'client-name':'remote-laptop', 'action':'GET_STAT_DATA'};
+function getStatData(machineName){
+    data = {'client-name':machineName, 'action':'GET_STAT_DATA'};
     $.ajax({
         'type':'post',
         'dataType':'json',
@@ -79,7 +76,7 @@ function getStatData(){
         'error':function(response){
                     console.log(response);
                 },
-        'url':'http://localhost:9000/api'
+        'url':_apiEndPoint
     });
 }
 
