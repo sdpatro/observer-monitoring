@@ -1,33 +1,65 @@
-import contextlib
-import sys
-import StringIO
-
 __author__ = 'sdpatro'
 
+import sys
+import StringIO
 from tornado import gen
 import datetime
-from pymongo import MongoClient
+import base64
 import json
 import operator
-import time
-import uimodules
+import subprocess
+import shlex
 
+from pymongo import MongoClient
 from tornado.iostream import StreamClosedError
 from tornado.web import RequestHandler, Application
 import tornado.web
+import tornado.httpclient
+import tornado.escape
 import tornado.ioloop
 from tornado.tcpserver import TCPServer
 from tornado.httpserver import HTTPServer
 from selenium import webdriver
 
-password = "PASSWORD"
+import uimodules
 
 
-class EchoServer(TCPServer):
+
+# The MongoDB specifications, recommended on the same drive as server for faster access.
+DB_IP = '127.0.0.1'
+DB_PORT = 27017
+
+# Get MongoDB client.
+def get_db(ip, port):
+    try:
+        client = MongoClient(ip, port)
+        db = client.observerdb
+        return db
+    except Exception as e:
+        print "ERROR: " + str(e)
+
+
+db_connection = get_db(DB_IP, DB_PORT)
+
+# To check the ping of the remote sender
+def run_ping(ip):
+    process = subprocess.Popen(shlex.split("ping " + ip), stdout=subprocess.PIPE)
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print "Output: " + output.strip()
+            # os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+    return process
+
+
+# The TCP listener endpoint for all remote senders.
+class TCPListener(TCPServer):
     # A new remote machine connects here.
     @gen.coroutine
     def handle_stream(self, stream, address):
-        ip, fileno = address
+        ip, file_no = address
         db = get_db('127.0.0.1', 27017)
         print "New IP connected: " + ip
         while True:
@@ -38,18 +70,17 @@ class EchoServer(TCPServer):
                 return
             break
 
-    # Inserting a single data JSON.
     @gen.coroutine
     def insert_data(self, stream, db, ip):
         data = yield stream.read_until('\n'.encode('utf-8'))
         data = clean_data(data)
-        dataJSON = json.loads(data)
+        data_json = json.loads(data)
 
-        addMachines(dataJSON['name'], ip, db)
+        update_machine(data_json["name"], ip)
 
-        live_coll = db["[" + dataJSON['name'] + "]-live"]
-        stat_coll = db["[" + dataJSON['name'] + "]-stat"]
-        live_coll.insert(dataJSON)
+        live_coll = db["[" + data_json['name'] + "]-live"]
+        stat_coll = db["[" + data_json['name'] + "]-stat"]
+        live_coll.insert(data_json)
         condense(stat_coll, live_coll)
 
 
@@ -61,10 +92,14 @@ def clean_data(data):
     return data
 
 
-# Add a new remote sender when it first connects:
-def addMachines(name, ip, db):
-    if not (db["machines"].find_one(dict(name=name, ip=ip))):
-        db["machines"].insert(dict(name=name, ip=ip))
+def update_machine(machine_name, machine_ip):
+    machine = db_connection["machines"].find_one({'name': machine_name, 'ip': machine_ip})
+    if machine is None:
+        db_connection["machines"].insert(
+            {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat())})
+    else:
+        db_connection["machines"].update_one({'name': machine_name},
+                                             {'$set': {'last_online': str(datetime.datetime.now().isoformat())}})
 
 
 # Live 60 secs monitoring data is converted to statistical 1-minute gradient limitless data.
@@ -118,151 +153,121 @@ def condense(stat_coll, live_coll):
         print str(stat)
 
 
-# Get MongoDB client.
-def get_db(ip, port):
-    try:
-        client = MongoClient(ip, port)
-        db = client.observerdb
-        return db
-    except Exception as e:
-        print "ERROR: " + str(e)
-
-
 # Fire up the TCP server.
 def start_tcp_server(port):
-    server = EchoServer()
+    server = TCPListener()
     server.listen(port)
     print "Observer TCP running at port " + port
 
     tornado.ioloop.IOLoop.current().start()
 
+
 ########################################################################
 
-dbConnection = get_db('127.0.0.1', 27017)
 
-
-class observerDriver:
+class ObserverDriver:
     steps = []
-    webDriver = None
+    snaps = []
+    web_driver = None
+    test_name = None
+    machine_name = None
 
-    def setWebDriver(self, driver):
-        self.webDriver = driver
+    def set_web_driver(self, driver):
+        self.web_driver = driver
 
-    def goTo(self, url):
+    def snap(self, height=None, width=None):
+        snap_date = str(datetime.datetime.now().isoformat())
+        self.web_driver.set_window_position(0, 0)
+        if height is not None and width is not None:
+            self.web_driver.set_window_size(height, width)
+        self.web_driver.save_screenshot(
+            "photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg")
+
+        with open("photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg",
+                  "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+            self.snaps.append(encoded_string)
+            print encoded_string
+
+    def go_to(self, url, record=False):
         start_time = datetime.datetime.now()
-        self.webDriver.get(url)
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
+        self.web_driver.get(url)
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="goTo", url=url, startTime=start_time.isoformat(), endTime=end_time.isoformat()))
+            dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                 record=record))
 
-    def buttonClick(self, id):
+    def button_click(self, button_id, record=False):
         start_time = datetime.datetime.now()
-        self.webDriver.findElement(str(id)).click()
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
+        self.web_driver.findElement(str(button_id)).click()
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="buttonClick", id=id, startTime=start_time.isoformat(), endTime=end_time.isoformat()))
+            dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
+                 endTime=end_time.isoformat(),
+                 record=record))
 
-    def submitForm(self, formElementId):
+    def submit_form(self, form_element_id, record=False):
         start_time = datetime.datetime.now()
-        el = self.webDriver.findElement(formElementId)
+        el = self.web_driver.findElement(form_element_id)
         el.submit()
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
-            pass
-        end_time = datetime.datetime.now()
-        self.steps.append(dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat()))
-
-    def fillFormElement(self, formElementId, inputText):
-        start_time = datetime.datetime.now()
-        el = self.webDriver.findElement(formElementId)
-        el.send_keys(inputText)
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="fillFormElement", startTime=start_time.isoformat(), endTime=end_time.isoformat()))
+            dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(), record=record))
 
-    def closeDriver(self):
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
+    def fill_form_element(self, form_element_id, input_text, record=False):
+        start_time = datetime.datetime.now()
+        el = self.web_driver.findElement(form_element_id)
+        el.send_keys(input_text)
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
-        self.webDriver.close()
-        self.webDriver.quit()
+        end_time = datetime.datetime.now()
+        self.steps.append(
+            dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                 record=record))
 
-    def checkElement(self, elementId):
-        while self.webDriver.execute_script('return document.readyState;') != 'complete':
+    def close_driver(self):
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
-        el = self.webDriver.findElement(elementId)
+        self.web_driver.close()
+        self.web_driver.quit()
+
+    def check_element(self, element_id):
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
+            pass
+        el = self.web_driver.findElement(element_id)
         if el is None:
             return False
         else:
             return True
 
-    def getSteps(self):
+    def get_steps(self):
         return self.steps
 
-    def __init__(self, driver):
-        self.webDriver = driver
+    def get_snaps(self):
+        return self.snaps
+
+    def __init__(self, driver, test_name, machine_name):
+        self.web_driver = driver
+        self.test_name = test_name
+        self.machine_name = machine_name
         del self.steps[:]
         self.steps = []
+        del self.snaps[:]
+        self.snaps = []
 
 
-def runTest(test_id, driver):
-    output = []
-    if test_id == 'test_1':
-        start_time = time.time()
-        driver.get("http://aspiringapps.com/web/home/log-in.html")
-        end_time = time.time()
-        output.append("Login page load time: " + str(end_time - start_time))
-        driver.find_element_by_id("email").send_keys("a@gmail.com")
-        el = driver.find_element_by_id("password")
-        el.send_keys("a")
-        start_time = time.time()
-        el.submit()
-        end_time = time.time()
-        driver.close()
-        output.append("Portal page load time: " + str(end_time - start_time))
-    elif test_id == 'test_2':
-        start_time = time.time()
-        driver.get("http://www.facebook.com")
-        end_time = time.time()
-        output.append("Facebook home page load time: " + str(end_time - start_time))
-        driver.find_element_by_id("email").send_keys("sidharth.patro@outlook.com")
-        el = driver.find_element_by_id("pass")
-        el.send_keys(password)
-        start_time = time.time()
-        el.submit()
-        end_time = time.time()
-        output.append("Facebook news feed load time: " + str(end_time - start_time))
-        start_time = time.time()
-        driver.get("http://www.linkedin.com")
-        end_time = time.time()
-        output.append("LinkedIn login page load time: " + str(end_time - start_time))
-        driver.find_element_by_id("login-email").send_keys("sidharth.patro@outlook.com")
-        el = driver.find_element_by_id("login-password")
-        el.send_keys(password)
-        start_time = time.time()
-        el.submit()
-        end_time = time.time()
-        output.append("LinkedIn news feed load time: " + str(end_time - start_time))
-    driver.quit()
-    return output
+class ApiHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
 
-
-@contextlib.contextmanager
-def stdoutIO(stdout=None):
-    old = sys.stdout
-    if stdout is None:
-        stdout = StringIO.StringIO()
-    sys.stdout = stdout
-    yield stdout
-    sys.stdout = old
-
-
-class APIhandler(RequestHandler):
-    def errorRespond(self, code, msg):
+    @gen.coroutine
+    def error_respond(self, code, msg):
         self.set_status(code)
         self.write(json.dumps({
             'status': code,
@@ -270,129 +275,186 @@ class APIhandler(RequestHandler):
         }))
         self.finish()
 
+    @gen.coroutine
+    def get_live_data(self, client_name):
+        live_data_query = db_connection["[" + client_name + "]-live"].find().sort("_id", -1).limit(1)
+        for record in live_data_query:
+            record['_id'] = str(record['_id'])
+            self.finish(record)
+
+    @gen.coroutine
     def post(self):
         if self.get_argument("action", None) is not None:
             action = self.get_argument("action")
             if action == "GET_LIVE_DATA":
                 client_name = self.get_argument("client-name")
-                live_data_query = dbConnection["[" + client_name + "]-live"].find().sort("_id", -1).limit(1)
-                for record in live_data_query:
-                    record['_id'] = str(record['_id'])
-                    self.finish(record)
+                yield self.get_live_data(client_name)
+
             if action == "GET_STAT_DATA":
                 client_name = self.get_argument("client-name")
-                stat_data_query = dbConnection["[" + client_name + "]-stat"].find()
+                stat_data_query = db_connection["[" + client_name + "]-stat"].find()
                 stat_data = []
                 for record in stat_data_query:
                     record['_id'] = str(record['_id'])
                     stat_data.append(record)
                 self.finish(dict(stat_data=stat_data))
-            if action == "RUN_TEST":
-                test_id = self.get_argument('test-id')
-                if self.get_argument('driver') == 'FIREFOX':
-                    web_driver = webdriver.Firefox()
-                elif self.get_argument('driver') == 'PHANTOMJS':
-                    web_driver = webdriver.PhantomJS()
-                output = ""
-                output = runTest(test_id, web_driver)
-                self.finish(dict(test_output=output))
             if action == "GET_REMOTE_MACHINES":
-                responseObject = {'machines': []}
-                for machine in dbConnection["machines"].find():
-                    responseObject['machines'].append({'name': str(machine['name']), 'ip': str(machine['ip'])})
-                print responseObject
-                print json.dumps(responseObject)
-                self.finish((dict(remoteMachines=json.dumps(responseObject))))
-
-            if action == "RUN_CUSTOM_TEST":
-                codeText = self.get_argument("testCode", None)
-                status = "success"
-                if codeText is None:
-                    self.finish((dict(status="failure", output="Missing argument in request")))
-                buffer = StringIO.StringIO()
-                try:
-                    sys.stdout = buffer
-                    obDriver = observerDriver(webdriver.Firefox())
-                    exec (codeText)
-                    sys.stdout = sys.__stdout__
-                    obDriver.closeDriver()
-                    outputString = str(obDriver.getSteps())
-
-                except Exception as e:
-                    outputString = e.message + buffer.getvalue()
-                    status = "failure"
-                self.finish((dict(status=status, output=outputString)))
+                remote_machines_cursor = db_connection["machines"].find()
+                remote_machines_list = []
+                for remote_machine in remote_machines_cursor:
+                    remote_machines_list.append({'name': remote_machine['name'], 'ip': remote_machine['ip'],
+                                                 'last_online': remote_machine['last_online']})
+                self.finish((dict(remoteMachines=json.dumps({'machines': remote_machines_list}))))
 
             if action == "SAVE_TEST":
-                codeText = self.get_argument("testCode", None)
-                testName = self.get_argument("testName", None)
-                machineName = self.get_argument("machine", None)
 
-                if codeText is None or testName is None or machineName is None:
+                test_code = self.get_argument("testCode", None)
+                test_name = self.get_argument("testName", None)
+                machine_name = self.get_argument("machine", None)
+
+                if test_code is None or test_name is None or machine_name is None:
                     self.finish((dict(status="failure", output="Missing argument in request")))
 
                 try:
-                    testObject = {'machine': machineName, 'script': codeText, 'name': testName}
-                    dbConnection["[" + machineName + "]-tests"].insert(testObject)
+                    test_object = {'machine': machine_name, 'script': test_code, 'name': test_name}
+                    db_connection["[" + machine_name + "]-tests"].insert(test_object)
                     status = "success"
-                    output = testName + " for " + machineName + " successfully saved."
+                    output = test_name + " for " + machine_name + " successfully saved."
                 except Exception as e:
                     output = e.message
                     status = "failure"
                 self.finish((dict(status=status, output=output)))
 
-            if action == "FETCH_TESTS":
-                machineName = self.get_argument("machine", None)
-                if machineName is None:
-                    self.errorRespond(400, "Arguments missing")
+            if action == "FETCH_TESTS_LIST":
+                machine_name = self.get_argument("machine", None)
+                if machine_name is None:
+                    self.error_respond(400, "Arguments missing")
                     return
-                tests = dbConnection["[" + machineName + "]-tests"].find()
+                tests = db_connection["[" + machine_name + "]-tests"].find()
                 try:
-                    responseObject = []
+                    response_object = []
                     for test in tests:
-                        responseObject.append(
-                            {'name': test['name'], 'machine': test['machine'], 'script': test['script']})
+                        response_object.append(
+                            {'name': test['name'], 'machine': test['machine']})
                     self.finish(dict(response_data=json.dumps({'tests':
-                                                                   responseObject})))
+                                                                   response_object})))
                 except Exception as e:
-                    self.errorRespond(500, "Something went wrong: " + str(e))
+                    self.error_respond(500, "Something went wrong: " + str(e))
+
+            if action == "FETCH_TEST":
+                machine_name = self.get_argument("machine", None)
+                test_name = self.get_argument("test_name", None)
+
+                if machine_name is None or test_name is None:
+                    self.error_respond(400, "Arguments missing")
+                    return
+                test = db_connection["[" + machine_name + "]-tests"].find_one({"name": test_name})
+                try:
+                    self.finish(dict(response_data=json.dumps({'script': test['script']})))
+                except Exception as e:
+                    self.error_respond(500, "Something went wrong: " + str(e))
+        else:
+            self.error_respond(400, "No action specified")
         pass
 
 
-class liveHandler(RequestHandler):
+class LiveHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
     def get(self):
         self.render("templates/live.html")
 
 
-class statHandler(RequestHandler):
+class StatHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
     def get(self):
         self.render("templates/stat.html")
 
 
-class perfHandler(RequestHandler):
+class PerfHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
     def get(self):
         self.render("templates/perf.html")
 
 
-class testHandler(RequestHandler):
-    def get(self):
-        self.render("templates/test.html")
+class TestHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
 
-    pass
+    def post(self):
+        pass
 
 
 def start_http_server(port):
     settings = {
         "ui_modules": uimodules
     }
-    app = Application([(r"/api", APIhandler),
-                       (r"/live", liveHandler),
-                       (r"/stat", statHandler),
-                       (r"/perf", perfHandler),
-                       (r"/test", testHandler),
+    app = Application([(r"/api", ApiHandler),
+                       (r"/live", LiveHandler),
+                       (r"/stat", StatHandler),
+                       (r"/perf", PerfHandler),
+                       (r"/test", TestHandler),
                        (r"/(.*)", tornado.web.StaticFileHandler, {"path": "../observer-monitoring/static"})],
                       autoreload=True, **settings)
     server = HTTPServer(app)
     server.listen(port)
     print "Observer HTTP running at port " + port
+    tornado.ioloop.IOLoop.current().start()
+
+
+##############################################################
+
+class SimHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
+    def error_respond(self, code, msg):
+        self.set_status(code)
+        self.write(json.dumps({
+            'status': code,
+            'message': msg
+        }))
+        self.finish()
+
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+
+    def post(self):
+        action = self.get_argument("action", None)
+        if action is not None:
+            if action == "RUN_TEST":
+                test_name = self.get_argument("testName", None)
+                machine_name = self.get_argument("machineName", None)
+                test_code = self.get_argument("testCode", None)
+                status = "success"
+                if test_code is None:
+                    self.finish((dict(status="failure", output="Missing argument in request")))
+                buffer = StringIO.StringIO()
+                try:
+                    sys.stdout = buffer
+                    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
+                    exec test_code
+                    sys.stdout = sys.__stdout__
+                    driver.close_driver()
+                    output = json.dumps({'steps': driver.get_steps(), 'snaps': driver.get_snaps()})
+                except Exception as e:
+                    output = e.message + buffer.getvalue()
+                    status = "failure"
+                self.finish((dict(status=status, output=output)))
+            pass
+        else:
+            self.error_respond(400, "No action specified")
+
+
+def start_sim_server(port):
+    sim_app = Application([(r"/sim", SimHandler)],
+                          autoreload=True)
+    server = HTTPServer(sim_app)
+    server.listen(port)
+    print "Observer Sim running at port " + port
     tornado.ioloop.IOLoop.current().start()

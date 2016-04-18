@@ -28,29 +28,49 @@
                     <br>
                     <div id="cpu0-meter" class="badge badge-default"></div>
                     <div id="cpu1-meter" class="badge badge-default"></div>
+                    <div id="cpu2-meter" class="badge badge-default"></div>
+                    <div id="cpu3-meter" class="badge badge-default"></div>
+                    <div id="cpu-misc-data">
+                        <div id="cpu-ctx-switches"></div>
+                        <div id="cpu-interrupts"></div>
+                    </div>
                 </div>
                 <div class="row">
-                    <h3>RAM usage</h3>
+                    <h3>RAM/Swap usage</h3>
                     <canvas id="graph-ram" width="800" height="200"></canvas>
                     <br>
-
                     <div id="ram-meter" class="badge badge-default"></div>
+                    <div id="swap-meter" class="badge badge-default"></div>
+                    <div id="ram-swap-misc-data">
+                        <div id="ram-available"></div>
+                        <div id="ram-used"></div>
+                        <div id="swap-total"></div>
+                        <div id="swap-used"></div>
+                    </div>
                 </div>
                 <div class="row">
                     <h3>Disk IO rate</h3>
                     <canvas id="graph-disk" width="800" height="200"></canvas>
                     <br>
-
                     <div id="disk-read-meter" class="badge badge-default"></div>
                     <div id="disk-write-meter" class="badge badge-default"></div>
+                    <div id="disk-misc-data">
+                        <div id="disk-total"></div>
+                        <div id="disk-used"></div>
+                    </div>
                 </div>
                 <div class="row">
                     <h3>Network IO counter</h3>
                     <canvas id="graph-network" width="800" height="200"></canvas>
                     <br>
-
                     <div id="net-send-meter" class="badge badge-default"></div>
                     <div id="net-recv-meter" class="badge badge-default"></div>
+                    <div id="net-misc-data">
+                        <div id="packets-sent-total"></div>
+                        <div id="packets-recv-total"></div>
+                        <div id="sent-total"></div>
+                        <div id="recv-total"></div>
+                    </div>
                 </div>
 
             </div>

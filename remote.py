@@ -21,13 +21,15 @@ def get_stats(name, nic):
     global prev_read
     global prev_write
 
-    stats = {}
-    stats['date'] = datetime.datetime.now().isoformat()
-    stats['name'] = name
-    stats['cpu'] = psutil.cpu_percent(interval=None, percpu=True)
-    stats['ram'] = psutil.virtual_memory().percent
-    stats['disk_io_read'] = psutil.disk_io_counters().read_bytes
-    stats['disk_io_write'] = psutil.disk_io_counters().write_bytes
+    stats = {'date': datetime.datetime.now().isoformat(), 'name': name,
+             'cpu': psutil.cpu_percent(interval=None, percpu=True), 'cpu_count': psutil.cpu_count(),
+             'cpu_ctx_switches': psutil.cpu_stats().ctx_switches, 'cpu_interrupts': psutil.cpu_stats().interrupts,
+             'cpu_': psutil.cpu_stats().ctx_switches, 'ram': psutil.virtual_memory().percent,
+             'ram-available': psutil.virtual_memory().available, 'ram-used': psutil.virtual_memory().used,
+             'swap': psutil.swap_memory().percent, 'swap-total': psutil.swap_memory().total,
+             'swap-used': psutil.swap_memory().used, 'disk_io_read': psutil.disk_io_counters().read_bytes,
+             'disk_io_write': psutil.disk_io_counters().write_bytes, 'disk_total': psutil.disk_usage('/').total,
+             'disk_used': psutil.disk_usage('/').used}
 
     nic_list = psutil.net_io_counters(pernic=True)
     nic = nic_list[nic]
@@ -60,9 +62,8 @@ def get_stats(name, nic):
     else:
         stats['disk_write_rate'] = 0
     prev_write = stats['disk_io_write']
-
-    stats['disk_usage'] = [psutil.disk_usage('/').used,psutil.disk_usage('/').total,psutil.disk_usage('/').free]
     return stats
+
 
 @gen.coroutine
 def run_remote():
@@ -76,7 +77,7 @@ def run_remote():
     print "Enter preferred NIC: "
     nic = raw_input()
 
-    stream = yield TCPClient().connect(str(dest_IP),dest_port)
+    stream = yield TCPClient().connect(str(dest_IP), dest_port)
     try:
         while True:
             stats = get_stats(remote_name, nic)

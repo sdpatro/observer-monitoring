@@ -1,4 +1,4 @@
-{% module headModuleTemplate("Performance Testing",["js/perf.js"]) %}
+{% module headModuleTemplate("Performance Testing",["js/perf.js","js/Chart.js","js/Chart.HorizontalBar.js","js/smoothie.js"]) %}
 <body>
 <div class="page-container">
 
@@ -27,16 +27,16 @@
                 <div class="row">
                     <h3>Sample Tests</h3>
 
-                    <div class="panel-group col-lg-9" id="test_custom">
+                    <div class="panel-group col-lg-9" id="test-custom">
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <h4 class="panel-title">
+                                <h4 id="test-name-header" class="panel-title">
                                     Custom Test
                                 </h4>
                             </div>
-                            <div class="panel-body">A custom test
-                                <textarea id="code_input"
-                                          style="width:400px; height:400px; background-color:black; color:white;">
+                            <div class="panel-body">
+                                <textarea id="code-input"
+                                          style="width:400px; height:300px; background-color:black; color:white;">
                                 </textarea>
                             </div>
                             <div class="panel-footer">
@@ -54,12 +54,52 @@
                             </div>
                         </div>
                     </div>
+                    <!--test-custom-->
 
-                    <div class="panel-group col-lg-3" id="tests_list">
+                    <div class="panel-group col-lg-3" id="tests-list">
                         <ul id="tests-list-group" class="list-group">
-                            <li class="list-group-item">Sample</li>
                         </ul>
                     </div>
+                    <!--tests-list-->
+
+                    <div class="panel-group col-lg-9" id="test-live-charts">
+                        <div class="panel panel-default">
+                            <div id="live-chart-container">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-group col-lg-9" id="test-result">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    Test Results
+                                </h4>
+                            </div>
+                            <div class="panel-body">
+                                <div id="bar-chart-wrapper">
+                                    <canvas id="bar-chart"></canvas>
+                                </div>
+                                <!--bar-chart-wrapper-->
+                                <div id="line-chart-wrapper">
+                                    <h4>CPU</h4>
+                                    <canvas id="line-chart-cpu"></canvas>
+                                    <h4>RAM</h4>
+                                    <canvas id="line-chart-ram"></canvas>
+                                    <h4>Disk</h4>
+                                    <canvas id="line-chart-disk"></canvas>
+                                    <h4>Network</h4>
+                                    <canvas id="line-chart-net"></canvas>
+                                </div>
+                                <!--line-chart-wrapper-->
+                                <div id="snapshots-wrapper">
+                                    <h4>Snapshots</h4>
+                                </div>
+                                <!--snapshots-wrapper-->
+                            </div>
+                        </div>
+                    </div>
+                    <!--test-result-->
 
                 </div>
 
@@ -67,6 +107,7 @@
             <!-- /.col-xs-12 main -->
         </div>
         <!--/.row-->
+
     </div>
     <!--/.container-->
 </div>

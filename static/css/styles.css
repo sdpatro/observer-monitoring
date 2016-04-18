@@ -164,3 +164,11 @@ a {
 .panel-body,.panel-footer{
   color: #333333;
 }
+
+// d3 stuff
+
+div.bar{
+   background-color: #ff0000;
+   height: 50px;
+   width: 50px;
+}
