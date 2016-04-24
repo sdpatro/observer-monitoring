@@ -23,11 +23,10 @@ from selenium import webdriver
 
 import uimodules
 
-
-
-# The MongoDB specifications, recommended on the same drive as server for faster access.
+# The MongoDB server specifications, recommended to be deployed on the same drive as root server for faster access.
 DB_IP = '127.0.0.1'
 DB_PORT = 27017
+
 
 # Get MongoDB client.
 def get_db(ip, port):
@@ -40,6 +39,7 @@ def get_db(ip, port):
 
 
 db_connection = get_db(DB_IP, DB_PORT)
+
 
 # To check the ping of the remote sender
 def run_ping(ip):
@@ -96,7 +96,7 @@ def update_machine(machine_name, machine_ip):
     machine = db_connection["machines"].find_one({'name': machine_name, 'ip': machine_ip})
     if machine is None:
         db_connection["machines"].insert(
-            {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat())})
+                {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat())})
     else:
         db_connection["machines"].update_one({'name': machine_name},
                                              {'$set': {'last_online': str(datetime.datetime.now().isoformat())}})
@@ -115,8 +115,8 @@ def condense(stat_coll, live_coll):
 
         stat = {'date': str(datetime.datetime.now().isoformat()), 'name': 'sample-name', 'cpu': cpu_clear, 'ram': 0,
                 'disk_io_read': 0, 'disk_io_write': 0, 'packets_sent': [0, 0], 'packets_recv': [0, 0], 'bytes_recv': 0,
-                'bytes_sent': 0, 'ul_rate': 0, 'dl_rate': 0, 'disk_read_rate': 0, 'disk_write_rate': 0,
-                'disk_usage': [0, 0, 0]}
+                'bytes_sent': 0, 'ul_rate': 0, 'dl_rate': 0, 'disk_read_rate': 0, 'disk_write_rate': 0, 'disk_total': 0,
+                'disk_used': 0}
 
         for record in live_data:
             stat['name'] = record['name']
@@ -132,7 +132,9 @@ def condense(stat_coll, live_coll):
             stat['bytes_sent'] += record['bytes_sent']
             stat['ul_rate'] += record['ul_rate']
             stat['dl_rate'] += record['dl_rate']
-            stat['disk_usage'] = tuple(map(operator.add, stat['disk_usage'], record['disk_usage']))
+            stat['disk_total'] += record['disk_total']
+            stat['disk_used'] += record['disk_used']
+
             live_coll.remove({"_id": record['_id']})
 
         stat['cpu'] = tuple(float(x / 60.0) for x in stat['cpu'])
@@ -147,7 +149,9 @@ def condense(stat_coll, live_coll):
         stat['bytes_recv'] = float(stat['bytes_recv'] / 60.0)
         stat['ul_rate'] = float(stat['ul_rate'] / 60.0)
         stat['dl_rate'] = float(stat['dl_rate'] / 60.0)
-        stat['disk_usage'] = tuple(float(x / 60.0) for x in stat['disk_usage'])
+        stat['disk_total'] = float(stat['disk_total'] / 60.0)
+        stat['disk_used'] = float(stat['disk_used'] / 60.0)
+
         print "Condensing..."
         stat_coll.insert(stat)
         print str(stat)
@@ -180,13 +184,14 @@ class ObserverDriver:
         self.web_driver.set_window_position(0, 0)
         if height is not None and width is not None:
             self.web_driver.set_window_size(height, width)
+        snap_name = "photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg"
         self.web_driver.save_screenshot(
-            "photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg")
+                snap_name)
 
-        with open("photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg",
+        with open(snap_name,
                   "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read())
-            self.snaps.append(encoded_string)
+            self.snaps.append({'snap_name': snap_name, 'snap_content': encoded_string})
             print encoded_string
 
     def go_to(self, url, record=False):
@@ -196,8 +201,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
-                 record=record))
+                dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                     record=record))
 
     def button_click(self, button_id, record=False):
         start_time = datetime.datetime.now()
@@ -206,9 +211,9 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
-                 endTime=end_time.isoformat(),
-                 record=record))
+                dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
+                     endTime=end_time.isoformat(),
+                     record=record))
 
     def submit_form(self, form_element_id, record=False):
         start_time = datetime.datetime.now()
@@ -218,7 +223,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(), record=record))
+                dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                     record=record))
 
     def fill_form_element(self, form_element_id, input_text, record=False):
         start_time = datetime.datetime.now()
@@ -228,8 +234,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-            dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
-                 record=record))
+                dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                     record=record))
 
     def close_driver(self):
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
@@ -276,19 +282,9 @@ class ApiHandler(RequestHandler):
         self.finish()
 
     @gen.coroutine
-    def get_live_data(self, client_name):
-        live_data_query = db_connection["[" + client_name + "]-live"].find().sort("_id", -1).limit(1)
-        for record in live_data_query:
-            record['_id'] = str(record['_id'])
-            self.finish(record)
-
-    @gen.coroutine
     def post(self):
         if self.get_argument("action", None) is not None:
             action = self.get_argument("action")
-            if action == "GET_LIVE_DATA":
-                client_name = self.get_argument("client-name")
-                yield self.get_live_data(client_name)
 
             if action == "GET_STAT_DATA":
                 client_name = self.get_argument("client-name")
@@ -307,7 +303,6 @@ class ApiHandler(RequestHandler):
                 self.finish((dict(remoteMachines=json.dumps({'machines': remote_machines_list}))))
 
             if action == "SAVE_TEST":
-
                 test_code = self.get_argument("testCode", None)
                 test_name = self.get_argument("testName", None)
                 machine_name = self.get_argument("machine", None)
@@ -335,7 +330,7 @@ class ApiHandler(RequestHandler):
                     response_object = []
                     for test in tests:
                         response_object.append(
-                            {'name': test['name'], 'machine': test['machine']})
+                                {'name': test['name'], 'machine': test['machine']})
                     self.finish(dict(response_data=json.dumps({'tests':
                                                                    response_object})))
                 except Exception as e:
@@ -344,7 +339,6 @@ class ApiHandler(RequestHandler):
             if action == "FETCH_TEST":
                 machine_name = self.get_argument("machine", None)
                 test_name = self.get_argument("test_name", None)
-
                 if machine_name is None or test_name is None:
                     self.error_respond(400, "Arguments missing")
                     return
@@ -353,6 +347,12 @@ class ApiHandler(RequestHandler):
                     self.finish(dict(response_data=json.dumps({'script': test['script']})))
                 except Exception as e:
                     self.error_respond(500, "Something went wrong: " + str(e))
+
+            if action == "SAVE_TEST_RESULT_AS":
+                json_data = json.loads(self.get_argument("jsonData"))
+                for record in json_data["live_data"]:
+                    print record["disk_used"]
+
         else:
             self.error_respond(400, "No action specified")
         pass
@@ -390,7 +390,7 @@ class TestHandler(RequestHandler):
         pass
 
 
-def start_http_server(port):
+def start_dash_server(port):
     settings = {
         "ui_modules": uimodules
     }
@@ -403,7 +403,7 @@ def start_http_server(port):
                       autoreload=True, **settings)
     server = HTTPServer(app)
     server.listen(port)
-    print "Observer HTTP running at port " + port
+    print "Observer Dashboard running at port " + port
     tornado.ioloop.IOLoop.current().start()
 
 
@@ -437,7 +437,7 @@ class SimHandler(RequestHandler):
                 buffer = StringIO.StringIO()
                 try:
                     sys.stdout = buffer
-                    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
+                    driver = ObserverDriver(webdriver.Firefox(), test_name, machine_name)
                     exec test_code
                     sys.stdout = sys.__stdout__
                     driver.close_driver()
@@ -447,6 +447,7 @@ class SimHandler(RequestHandler):
                     status = "failure"
                 self.finish((dict(status=status, output=output)))
             pass
+
         else:
             self.error_respond(400, "No action specified")
 
@@ -456,5 +457,51 @@ def start_sim_server(port):
                           autoreload=True)
     server = HTTPServer(sim_app)
     server.listen(port)
-    print "Observer Sim running at port " + port
+    print "Observer Simulator running at port " + port
+    tornado.ioloop.IOLoop.current().start()
+
+
+#####################################################
+
+class LiveMonitorHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
+    def error_respond(self, code, msg):
+        self.set_status(code)
+        self.write(json.dumps({
+            'status': code,
+            'message': msg
+        }))
+        self.finish()
+
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+
+
+    @gen.coroutine
+    def get_live_data(self, client_name):
+        live_data_query = db_connection["[" + client_name + "]-live"].find().sort("_id", -1).limit(1)
+        for record in live_data_query:
+            record['_id'] = str(record['_id'])
+            self.finish(record)
+
+    @gen.coroutine
+    def post(self):
+        action = self.get_argument("action", None)
+        if action is not None:
+            if action == "GET_LIVE_DATA":
+                client_name = self.get_argument("client-name")
+                yield self.get_live_data(client_name)
+
+        else:
+            self.error_respond(400, "No action specified")
+
+
+def start_live_server(port):
+    sim_app = Application([(r"/live", LiveMonitorHandler)],
+                          autoreload=True)
+    server = HTTPServer(sim_app)
+    server.listen(port)
+    print "Observer Live running at port " + port
     tornado.ioloop.IOLoop.current().start()
