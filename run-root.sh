@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-echo "TCP Listener, HTTP Web Server, Simulation Server initializing..." &
-python run.py tcp 8889 &
-python run.py http 9000 &
-python run.py http_sim 9001
+echo "TCP Listener, Dashboard Web Server, Simulation Server, Live Monitor Server & Compute Server initializing..." &
+python run.py listener 8889 &
+python run.py dash 9000 &
+python run.py sim 9001 &
+python run.py live 9002 &
+python run.py compute 9003
 
 
 

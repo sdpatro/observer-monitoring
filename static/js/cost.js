@@ -68,6 +68,33 @@ function fetchExtrapolatedCharts(daysDuration){
     });
 }
 
+
+function setCpuDemandStats(){
+    cpuDataNormalised = [];
+    console.log(_cpuCoreCount+" "+cpuDataNormalised);
+    cpuDataMean = 0;
+    for(var i=0 ; i<cpuData[0].length ; i++){
+        temp_sum = 0;
+        for(var j=0 ; j<_cpuCoreCount ; j++){
+            temp_sum += (cpuData[j][i][1]/_cpuCoreCount);
+        }
+        cpuDataNormalised.push(temp_sum);
+        cpuDataMean += cpuDataNormalised[i];
+    }
+
+    cpuDataMean = Math.round(cpuDataMean/cpuDataNormalised.length * 100) / 100;
+    cpuDataNormalised = cpuDataNormalised.sort();
+    cpuDataMedian = Math.round(cpuDataNormalised[Math.round(cpuDataNormalised.length/2)]*100) / 100;
+    $("#cpu_demand_stats").text("Mean "+cpuDataMean.toString()+" Median: "+cpuDataMedian);
+}
+function setRamDemandStats(){
+
+}
+function setNetDemandStats(){
+
+}
+
+
 function attachCpuEstimationChart(records){
     var cpuSeries = [];
     for(var i=0 ; i<cpuData.length ; i++){
@@ -96,6 +123,7 @@ function attachCpuEstimationChart(records){
         width:600
     });
 
+
     // RAM
     var chartData={
       "type": "line",
@@ -119,6 +147,8 @@ function attachCpuEstimationChart(records){
         height:400,
         width:600
     });
+
+    setCpuDemandStats();
 
     // Net
     var chartData={
@@ -147,8 +177,8 @@ function attachCpuEstimationChart(records){
 }
 
 function generateData_CPU(record){
-    cpuCoreCount = record['cpu'].length;
-    for(var i=0 ; i<cpuCoreCount ; i++){
+    _cpuCoreCount = record['cpu'].length;
+    for(var i=0 ; i<_cpuCoreCount ; i++){
         cpuData[i].push([Date.parse(record["date"]),record['cpu'][i]]);
     }
 }

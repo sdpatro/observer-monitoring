@@ -1,5 +1,6 @@
 __author__ = 'sdpatro'
-
+import Image
+import xlsxwriter
 import sys
 import StringIO
 from tornado import gen
@@ -9,6 +10,7 @@ import json
 import operator
 import subprocess
 import shlex
+import dateutil.parser
 
 from pymongo import MongoClient
 from tornado.iostream import StreamClosedError
@@ -73,33 +75,37 @@ class TCPListener(TCPServer):
     @gen.coroutine
     def insert_data(self, stream, db, ip):
         data = yield stream.read_until('\n'.encode('utf-8'))
-        data = clean_data(data)
         data_json = json.loads(data)
 
-        update_machine(data_json["name"], ip)
+        if data_json.has_key('node'):
+            update_machine(data_json, ip)
 
-        live_coll = db["[" + data_json['name'] + "]-live"]
-        stat_coll = db["[" + data_json['name'] + "]-stat"]
-        live_coll.insert(data_json)
-        condense(stat_coll, live_coll)
+        else:
+            live_coll = db["[" + data_json['name'] + "]-live"]
+            stat_coll = db["[" + data_json['name'] + "]-stat"]
 
+            update_machine_time(data_json["name"])
 
-# JSON received from remote sender has some quirks.
-def clean_data(data):
-    data = data[:-1]
-    data = data.replace("\'", "\"")
-    data = data.replace('L', '')
-    return data
+            live_coll.insert(data_json)
+            condense(stat_coll, live_coll)
 
 
-def update_machine(machine_name, machine_ip):
+def update_machine(json_data, machine_ip):
+    machine_name = json_data["name"]
     machine = db_connection["machines"].find_one({'name': machine_name, 'ip': machine_ip})
     if machine is None:
         db_connection["machines"].insert(
-                {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat())})
+                {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat()),
+                 'machine': json_data['machine'], 'node': json_data['node'], 'architecture': json_data['architecture'],
+                 'system': json_data['system'], 'release': json_data['release'], 'version': json_data['release']})
     else:
         db_connection["machines"].update_one({'name': machine_name},
-                                             {'$set': {'last_online': str(datetime.datetime.now().isoformat())}})
+                                             {'$set': {'ip': machine_ip}})
+
+
+def update_machine_time(machine_name):
+    db_connection["machines"].update_one({'name': machine_name},
+                                         {'$set': {'last_online': str(datetime.datetime.now().isoformat())}})
 
 
 # Live 60 secs monitoring data is converted to statistical 1-minute gradient limitless data.
@@ -158,7 +164,7 @@ def condense(stat_coll, live_coll):
 
 
 # Fire up the TCP server.
-def start_tcp_server(port):
+def start_listener(port):
     server = TCPListener()
     server.listen(port)
     print "Observer TCP running at port " + port
@@ -184,7 +190,7 @@ class ObserverDriver:
         self.web_driver.set_window_position(0, 0)
         if height is not None and width is not None:
             self.web_driver.set_window_size(height, width)
-        snap_name = "photos_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg"
+        snap_name = "files_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg"
         self.web_driver.save_screenshot(
                 snap_name)
 
@@ -272,7 +278,6 @@ class ApiHandler(RequestHandler):
     def data_received(self, chunk):
         pass
 
-    @gen.coroutine
     def error_respond(self, code, msg):
         self.set_status(code)
         self.write(json.dumps({
@@ -281,10 +286,30 @@ class ApiHandler(RequestHandler):
         }))
         self.finish()
 
+    # Utility function for excel columns
+    def get_excel_column(self, number):
+        char_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+                     'U', 'V', 'W', 'X', 'Y', 'Z']
+        rem = number
+        result = ""
+        while rem > 0:
+            result = char_list[(rem % 26) - 1] + result
+            rem = int(rem / 26)
+        return result
+
     @gen.coroutine
     def post(self):
         if self.get_argument("action", None) is not None:
             action = self.get_argument("action")
+            if action == "GET_SPECS":
+                machine_name = self.get_argument("machine_name", None)
+                if machine_name is None:
+                    self.error_respond(400, "Machine name not provided.")
+                else:
+                    machine = db_connection["machines"].find_one({'name': machine_name})
+                    self.finish({'machine': machine['machine'], 'node': machine['node'], 'version': machine['version'],
+                                 'release': machine['release'], 'system': machine['system'],
+                                 'architecture': machine['architecture']})
 
             if action == "GET_STAT_DATA":
                 client_name = self.get_argument("client-name")
@@ -350,8 +375,75 @@ class ApiHandler(RequestHandler):
 
             if action == "SAVE_TEST_RESULT_AS":
                 json_data = json.loads(self.get_argument("jsonData"))
-                for record in json_data["live_data"]:
-                    print record["disk_used"]
+                test_name = self.get_argument("test_name")
+                file_type = self.get_argument("file_type")
+
+                if file_type == "XLSX":
+
+                    live_data = json_data["live_data"]
+                    snaps = json_data["snaps_id"]
+
+                    workbook_name = test_name + "_" + datetime.datetime.now().isoformat()
+
+                    workbook = xlsxwriter.Workbook('files_buffer/' + workbook_name + ".xlsx")
+                    worksheet = workbook.add_worksheet()
+                    bold_header = workbook.add_format({'bold': True, 'font_color': '#0b9f51'})
+                    large_bold_green = workbook.add_format({'bold': True, 'font_size': 18, 'font_color': '#009245'})
+                    large_bold_blue = workbook.add_format({'bold': True, 'font_size': 18, 'font_color': '#005392'})
+
+                    worksheet.set_row(0, 30)
+                    worksheet.write("A1", "Stats", large_bold_green)
+
+                    record_offset = 3
+                    property_header_offset = 2
+                    col = 0
+
+                    for property, value in live_data[0].iteritems():
+                        worksheet.write(self.get_excel_column(col + 1) + str(property_header_offset + 1), str(property),
+                                        bold_header)
+                        worksheet.set_column(self.get_excel_column(col + 1) + ":" + self.get_excel_column(col + 1), 20)
+                        col += 1
+                    for j, record in enumerate(live_data):
+                        k = 0
+                        for property, value in record.iteritems():
+                            worksheet.write(self.get_excel_column(k + 1) + str(j + 1 + record_offset), str(value))
+                            k += 1
+
+                    worksheet.set_row(len(live_data) + 4, 30)
+                    worksheet.write("A" + str(len(live_data) + 5), "Snaps", large_bold_blue)
+
+                    images_offset = len(live_data) + 5
+                    last_cell_height = 0
+                    for snap in snaps:
+                        worksheet.insert_image("A" + str(images_offset + last_cell_height + 2), snap,
+                                               {'x_scale': 0.5, 'y_scale': 0.5})
+                        im = Image.open(snap)
+                        width, height = im.size
+                        last_cell_height += int(height / 30)
+
+                    workbook.close()
+                    self.finish(dict(file_name=workbook_name))
+
+                elif file_type == "CSV":
+                    live_data = json_data["live_data"]
+                    csv_file_name = test_name + "_" + datetime.datetime.now().isoformat() + ".csv"
+                    csv_fp = open("files_buffer/" + csv_file_name, 'w')
+
+                    property_string = ""
+                    for property, value in live_data[0].iteritems():
+                        property_string += property + ","
+                    property_string = property_string[:-1]
+                    property_string += "\n"
+                    csv_fp.write(property_string)
+                    for i, record in enumerate(live_data):
+                        record_string = ""
+                        for property, value in record.iteritems():
+                            record_string += str(value) + ","
+                        record_string = record_string[:-1]
+                        record_string += "\n"
+                        csv_fp.write(record_string)
+                    self.finish(dict(file_name=csv_file_name))
+
 
         else:
             self.error_respond(400, "No action specified")
@@ -390,6 +482,24 @@ class TestHandler(RequestHandler):
         pass
 
 
+class XLSXHandler(RequestHandler):
+    def post(self):
+        pass
+
+    def get(self):
+        request_url = self.request.uri
+        self.write(request_url)
+        pass
+
+
+class CostHandler(RequestHandler):
+    def post(self):
+        pass
+
+    def get(self):
+        self.render("templates/cost.html")
+
+
 def start_dash_server(port):
     settings = {
         "ui_modules": uimodules
@@ -398,7 +508,10 @@ def start_dash_server(port):
                        (r"/live", LiveHandler),
                        (r"/stat", StatHandler),
                        (r"/perf", PerfHandler),
+                       (r"/cost", CostHandler),
                        (r"/test", TestHandler),
+                       (r"/files/(.*)", tornado.web.StaticFileHandler,
+                        {"path": "../observer-monitoring/files_buffer/"}),
                        (r"/(.*)", tornado.web.StaticFileHandler, {"path": "../observer-monitoring/static"})],
                       autoreload=True, **settings)
     server = HTTPServer(app)
@@ -437,7 +550,7 @@ class SimHandler(RequestHandler):
                 buffer = StringIO.StringIO()
                 try:
                     sys.stdout = buffer
-                    driver = ObserverDriver(webdriver.Firefox(), test_name, machine_name)
+                    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
                     exec test_code
                     sys.stdout = sys.__stdout__
                     driver.close_driver()
@@ -478,7 +591,6 @@ class LiveMonitorHandler(RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
 
-
     @gen.coroutine
     def get_live_data(self, client_name):
         live_data_query = db_connection["[" + client_name + "]-live"].find().sort("_id", -1).limit(1)
@@ -504,4 +616,141 @@ def start_live_server(port):
     server = HTTPServer(sim_app)
     server.listen(port)
     print "Observer Live running at port " + port
+    tornado.ioloop.IOLoop.current().start()
+
+
+#####################################################
+
+def get_delta_time_days(stat_records):
+    start_time = dateutil.parser.parse(stat_records[0]['date'])
+    end_time = dateutil.parser.parse(stat_records[len(stat_records) - 1]['date'])
+    delta_time_days = (end_time - start_time).days
+    return delta_time_days
+
+
+def get_uptime_percentage(machine):
+    stat_count = db_connection["[" + machine + "]-stat"].count()
+
+    newest_stat_record = db_connection["[" + machine + "]-stat"].find().sort("date", -1).limit(1)
+    oldest_stat_record = db_connection["[" + machine + "]-stat"].find().sort("date", 1).limit(1)
+
+    old_timestamp = dateutil.parser.parse(oldest_stat_record[0]["date"])
+    new_timestamp = dateutil.parser.parse(newest_stat_record[0]["date"])
+    minutes_count = (new_timestamp - old_timestamp).seconds / 60
+    minutes_count += (new_timestamp - old_timestamp).days * (24 * 60)
+    return stat_count, minutes_count
+
+
+def condense_data_estimation(stat_records, minute_gradient):
+    new_stat_records = []
+    while len(stat_records) > minute_gradient:
+        temp_record = stat_records[0]
+        for i in range(1, minute_gradient):
+            record = stat_records[i]
+            temp_record['name'] = record['name']
+            temp_record['cpu'] = tuple(map(operator.add, temp_record['cpu'], record['cpu']))
+            temp_record['ram'] += record['ram']
+            temp_record['disk_io_read'] += record['disk_io_read']
+            temp_record['disk_io_write'] += record['disk_io_write']
+            temp_record['disk_read_rate'] += record['disk_read_rate']
+            temp_record['disk_write_rate'] += record['disk_write_rate']
+            temp_record['packets_sent'] = tuple(map(operator.add, temp_record['packets_sent'], record['packets_sent']))
+            temp_record['packets_recv'] = tuple(map(operator.add, temp_record['packets_recv'], record['packets_recv']))
+            temp_record['bytes_recv'] += record['bytes_recv']
+            temp_record['bytes_sent'] += record['bytes_sent']
+            temp_record['ul_rate'] += record['ul_rate']
+            temp_record['dl_rate'] += record['dl_rate']
+            temp_record['disk_total'] += record['disk_total']
+            temp_record['disk_used'] += record['disk_used']
+
+        temp_record['cpu'] = tuple(float(x / minute_gradient) for x in temp_record['cpu'])
+        temp_record['ram'] = float(temp_record['ram'] / minute_gradient)
+        temp_record['disk_io_read'] = float(temp_record['disk_io_read'] / minute_gradient)
+        temp_record['disk_io_write'] = float(temp_record['disk_io_write'] / minute_gradient)
+        temp_record['disk_read_rate'] = float(temp_record['disk_read_rate'] / minute_gradient)
+        temp_record['disk_write_rate'] = float(temp_record['disk_write_rate'] / minute_gradient)
+        temp_record['packets_sent'] = tuple(float(x / minute_gradient) for x in temp_record['packets_sent'])
+        temp_record['packets_recv'] = tuple(float(x / minute_gradient) for x in temp_record['packets_recv'])
+        temp_record['bytes_sent'] = float(temp_record['bytes_sent'] / minute_gradient)
+        temp_record['bytes_recv'] = float(temp_record['bytes_recv'] / minute_gradient)
+        temp_record['ul_rate'] = float(temp_record['ul_rate'] / minute_gradient)
+        temp_record['dl_rate'] = float(temp_record['dl_rate'] / minute_gradient)
+        temp_record['disk_total'] = float(temp_record['disk_total'] / minute_gradient)
+        temp_record['disk_used'] = float(temp_record['disk_used'] / minute_gradient)
+
+        stat_records = stat_records[minute_gradient:]
+        new_stat_records.append(temp_record)
+    return new_stat_records
+
+
+class ComputeHandler(RequestHandler):
+    def data_received(self, chunk):
+        pass
+
+    def error_respond(self, code, msg):
+        self.set_status(code)
+        self.write(json.dumps({
+            'status': code,
+            'message': msg
+        }))
+        self.finish()
+
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+
+    @gen.coroutine
+    def post(self):
+        action = self.get_argument("action", None)
+        machine = self.get_argument("machine", None)
+        days_duration = self.get_argument("days_duration", None)
+        if action is not None:
+            if action == "GET_COST_STATS":
+                if machine is not None:
+                    stat_count, minutes_count = get_uptime_percentage(machine)
+                    self.finish({'duration': minutes_count, 'count': stat_count})
+                else:
+                    self.error_respond(400, "No machine name specified.")
+            if action == "FETCH_ESTIMATED_CHARTS":
+                if machine is None:
+                    self.error_respond(400, "No machine name specified.")
+                elif days_duration is None:
+                    self.error_respond(400, "Days duration not specified.")
+                else:
+                    print "days_duration: " + days_duration
+                    stat_records_cursor = db_connection["[" + machine + "]-stat"].find()
+                    stat_records = []
+
+                    for stat_record in stat_records_cursor:
+                        stat_records.append(stat_record)
+
+                    i = 0
+                    initial_delta_time = dateutil.parser.parse(
+                            stat_records[len(stat_records) - 1]['date']) - dateutil.parser.parse(
+                            stat_records[0]['date'])
+                    while int(get_delta_time_days(stat_records)) < int(days_duration):
+                        stat_records.append(stat_records[i].copy())
+                        cur_date = stat_records[len(stat_records) - 1]['date']
+                        cur_date = dateutil.parser.parse(cur_date)
+                        cur_date += initial_delta_time + datetime.timedelta(1, 60)
+                        stat_records[len(stat_records) - 1]['date'] = cur_date.isoformat()
+                        i += 1
+                    if int(len(stat_records) / 250) > 0:
+                        minute_gradient = int(len(stat_records) / 250)
+                    else:
+                        minute_gradient = 1
+                    stat_records = condense_data_estimation(stat_records, minute_gradient)
+                    for record in stat_records:
+                        record['_id'] = str(record['_id'])
+                    self.finish(dict(stat_data=stat_records))
+
+        else:
+            self.error_respond(400, "No action specified")
+
+
+def start_compute_server(port):
+    sim_app = Application([(r"/compute", ComputeHandler)],
+                          autoreload=True)
+    server = HTTPServer(sim_app)
+    server.listen(port)
+    print "Observer Compute running at port " + port
     tornado.ioloop.IOLoop.current().start()

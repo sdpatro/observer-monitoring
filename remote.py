@@ -8,6 +8,8 @@ import psutil
 import time
 import datetime
 from tornado.tcpclient import TCPClient
+import platform
+import json
 
 prev_recv = -1
 prev_sent = -1
@@ -21,15 +23,19 @@ def get_stats(name, nic):
     global prev_read
     global prev_write
 
+    with open('/proc/uptime', 'r') as f:
+        uptime_seconds = float(f.readline().split()[0])
+
     stats = {'date': datetime.datetime.now().isoformat(), 'name': name,
              'cpu': psutil.cpu_percent(interval=None, percpu=True), 'cpu_count': psutil.cpu_count(),
              'cpu_ctx_switches': psutil.cpu_stats().ctx_switches, 'cpu_interrupts': psutil.cpu_stats().interrupts,
-             'cpu_': psutil.cpu_stats().ctx_switches, 'ram': psutil.virtual_memory().percent,
+             'ram': psutil.virtual_memory().percent,
              'ram-available': psutil.virtual_memory().available, 'ram-used': psutil.virtual_memory().used,
              'swap': psutil.swap_memory().percent, 'swap-total': psutil.swap_memory().total,
              'swap-used': psutil.swap_memory().used, 'disk_io_read': psutil.disk_io_counters().read_bytes,
              'disk_io_write': psutil.disk_io_counters().write_bytes, 'disk_total': psutil.disk_usage('/').total,
-             'disk_used': psutil.disk_usage('/').used}
+             'disk_used': psutil.disk_usage('/').used,
+             'uptime': uptime_seconds}
 
     nic_list = psutil.net_io_counters(pernic=True)
     nic = nic_list[nic]
@@ -79,8 +85,16 @@ def run_remote():
 
     stream = yield TCPClient().connect(str(dest_IP), dest_port)
     try:
+        specs = {"machine": platform.platform(), "node": platform.node(), "architecture": [platform.architecture()[0],platform.architecture()[1]],
+                 "system": platform.system(), "release": platform.release(), "version": platform.version(),
+                 "name": remote_name}
+        specs = json.dumps(specs)
+        text = str(specs) + '\n'
+        yield stream.write(text.encode('utf-8'))
+        time.sleep(1)
         while True:
             stats = get_stats(remote_name, nic)
+            stats = json.dumps(stats)
             text = str(stats) + '\n'
             yield stream.write(text.encode('utf-8'))
             print text

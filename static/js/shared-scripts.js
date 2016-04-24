@@ -3,6 +3,9 @@ $(document).ready(pageInit);
 _common = {"currentMachine":document.cookie};
 _apiEndPoint = "http://"+window.location.hostname+":9000/api";
 _simEndPoint = "http://"+window.location.hostname+":9001/sim";
+_liveEndPoint = "http://"+window.location.hostname+":9002/live";
+_filesEndPoint = "http://"+window.location.hostname+":9000/files";
+_computeEndPoint = "http://"+window.location.hostname+":9003/compute";
 
 function pageInit(){
     remoteMachinesUpdater();
@@ -40,12 +43,12 @@ function loadRemoteMachines(remoteMachines){
         if(timeDiff/1000 > 10){
             status = "offline";
         }
-        var $item = $("<a class=\"list-group-item\" onclick='changeMachine(\""+remoteMachines[i].name+"\");'>"+remoteMachines[i].name+" "+remoteMachines[i].ip+" "+status+"</a>");
+        var $item = $("<a class=\"list-group-item\" onclick='changeMachine(\""+remoteMachines[i].name+"\",\""+remoteMachines[i].ip+"\");'>"+remoteMachines[i].name+" "+remoteMachines[i].ip+" "+status+"</a>");
         $("#machines-remote").append($item);
     }
 }
 
-function changeMachine(machineName){
+function changeMachine(machineName,machineIP){
     document.cookie = machineName;
     location.reload();
 }

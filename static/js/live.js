@@ -6,14 +6,61 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     runGraph_RAM();
     runGraph_disk();
     runGraph_net();
+    update_uptime();
 });
 
 liveDataCache = [];
 
+function convert_to_timedelta(seconds){
+
+    var years  = Math.floor(seconds/(60*60*24*30*12));
+    seconds = seconds%(60*60*24*30*12);
+    var months = Math.floor(seconds/(60*60*24*30));
+    seconds = seconds%(60*60*24*30);
+    var days = Math.floor(seconds/(60*60*24));
+    seconds = seconds%(60*60*24);
+    var hours = Math.floor(seconds/(60*60));
+    seconds = seconds%(60*60);
+    var minutes = Math.floor(seconds/60);
+    seconds = Math.floor(seconds%(60));
+
+    var timedelta_string = "";
+    if(years > 0){
+        timedelta_string += years + " years "
+    }
+    if(months > 0){
+        timedelta_string += months + " months "
+    }
+    if(days > 0){
+        timedelta_string += days + " days "
+    }
+    if(hours > 0){
+        timedelta_string += hours + " hours "
+    }
+    if(minutes > 0){
+        timedelta_string += minutes + " minutes "
+    }
+    if(seconds > 0){
+        timedelta_string += seconds + " seconds "
+    }
+
+    return timedelta_string;
+}
+
+function update_uptime(){
+   if(liveDataCache.length>0){
+    dataUnit = liveDataCache[(liveDataCache).length-1];
+    $("#sys-uptime").text(convert_to_timedelta(dataUnit["uptime"]));
+   }
+   setTimeout(function(){
+    update_uptime();
+   },1000);
+}
+
 function runGraph_CPU(){
     _isCpuTimeSeriesAdded = false;
     var colors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
-    var fillStyles = ["rgba(238,97,70,0.2)","rgba(255,213,87,0.2)","rgba(82,144,142,0.51)","rgba(82,144,113,0.51)"];
+    var fillStyles = ["rgba(238,97,70,0.2)","rgba(255,213,87,0.2)","rgba(82,144,142,0.2)","rgba(82,144,113,0.2)"];
 
     var smoothie = new SmoothieChart({maxValue:100,minValue:0});
     smoothie.streamTo(document.getElementById("graph-cpu"),1000);
@@ -128,7 +175,7 @@ function pollLiveData(){
     $.ajax({
         'data':data,
         'type' : 'post',
-        'url' : _apiEndPoint,
+        'url' : _liveEndPoint,
         'success':function(response){
                     liveDataCache.push(response);
                     if(liveDataCache.length > 60){

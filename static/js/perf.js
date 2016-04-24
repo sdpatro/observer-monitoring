@@ -3,6 +3,7 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
   fetchTestsList();
+  _currentTestName = "Custom Test";
 });
 
 window.onload = function(){
@@ -101,7 +102,7 @@ function runCustomTest(){
 function attachImages(output){
     var testSnaps = JSON.parse(output)["snaps"];
     for(var i=0 ; i<testSnaps.length ; i++){
-        $("#snapshots-wrapper").append("<img src=\"data:image/png;base64,"+testSnaps[i]+"\" />");
+        $("#snapshots-wrapper").append("<img id=\""+testSnaps[i]['snap_name']+"\" src=\"data:image/jpg;base64,"+testSnaps[i]['snap_content']+"\" />");
     }
 }
 
@@ -146,6 +147,10 @@ function loadTestOutputCharts(steps){
     setChartDimensions("#line-chart-net",200,500);
 
     loadBarChart(steps);
+    attachLineChartData();
+}
+
+function attachLineChartData(){
     loadLineChart_CPU();
     loadLineChart_RAM();
     loadLineChart_Disk();
@@ -347,14 +352,13 @@ function closeLiveMonitoring(){
     _isTestRunning = false;
     _isLiveGraphsRunning = false;
     $("#live-chart-container").empty();
-    attachLineChartData();
 }
 
 function runGraph_CPU(){
     $("#live-chart-container").append("<canvas id=\"graph-cpu\" width=\"400\" height=\"100\"></canvas>");
     _isCpuTimeSeriesAdded = false;
     var colors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
-    var fillStyles = ["rgba(238,97,70,0.2)","rgba(255,213,87,0.2)","rgba(82,144,142,0.51)","rgba(82,144,113,0.51)"];
+    var fillStyles = ["rgba(238,97,70,0.2)","rgba(255,213,87,0.2)","rgba(82,144,142,0.2)","rgba(82,144,113,0.2)"];
 
     var smoothie = new SmoothieChart({maxValue:100,minValue:0});
     smoothie.streamTo(document.getElementById("graph-cpu"),1000);
@@ -433,8 +437,8 @@ function runGraph_net(){
       }
     }, 1000);
 
-    smoothie.addTimeSeries(net_send,{'strokeStyle':'#991300','fillStyle':'rgba(152,19,0,0.2)'});
-    smoothie.addTimeSeries(net_recv,{'strokeStyle':'#262835','fillStyle':'rgba(38,40,53,0.2)'});
+    smoothie.addTimeSeries(net_send,{'strokeStyle':'#991300','fillStyle':'rgba(152,19,0,0.3)'});
+    smoothie.addTimeSeries(net_recv,{'strokeStyle':'#262835','fillStyle':'rgba(38,40,53,0.3)'});
 }
 
 function pollLiveData(){
@@ -442,7 +446,7 @@ function pollLiveData(){
     $.ajax({
         'data':data,
         'type' : 'post',
-        'url' : _apiEndPoint,
+        'url' : _liveEndPoint,
         'success':function(response){
                     liveDataCache.push(response);
                     if(!_isLiveGraphsRunning && _isTestRunning){
@@ -458,4 +462,66 @@ function pollLiveData(){
                   },
         'data-type':'json'
     })
+}
+
+function makeChartSummaryJson(){
+
+    var jsonData = {'live_data':[],'snaps_id':[]};
+
+    for(var i=0 ; i<liveDataCache.length ; i++){
+        jsonData["live_data"].push(liveDataCache[i]);
+    }
+
+    snaps = $("#snapshots-wrapper").children();
+    for(var i=1 ; i<snaps.length ; i++){
+        jsonData["snaps_id"].push($(snaps[i]).attr('id'));
+    }
+
+    wrapperJson = {'jsonData':JSON.stringify(jsonData),'action':'SAVE_TEST_RESULT_AS','test_name':_currentTestName,'file_type':'XLSX'};
+    console.log(wrapperJson["jsonData"]);
+    return wrapperJson;
+}
+
+function makeCSVSummaryJson(){
+    var jsonData = {'live_data':[]};
+    for(var i=0 ; i<liveDataCache.length ; i++){
+        jsonData["live_data"].push(liveDataCache[i]);
+    }
+    wrapperJson = {'jsonData':JSON.stringify(jsonData),'action':'SAVE_TEST_RESULT_AS','test_name':_currentTestName,'file_type':'CSV'};
+    return wrapperJson;
+}
+
+function saveAs(format){
+    switch(format){
+        case 'XLXS':var summaryJson = makeChartSummaryJson();
+                    $.ajax({
+                        'type':'POST',
+                        'url': _apiEndPoint,
+                        'dataType':'json',
+                        'data':summaryJson,
+                        'success':function(response){
+                                    window.location = _filesEndPoint+"/"+response.file_name+".xlsx";
+                                 },
+                        'failure':function(response){
+                                    console.log(response);
+                                 }
+                    });
+                    break;
+        case 'CSV': var summaryJson = makeCSVSummaryJson();
+                    $.ajax({
+                        'type':'POST',
+                        'url': _apiEndPoint,
+                        'dataType':'json',
+                        'data':summaryJson,
+                        'success':function(response){
+                                    window.location = _filesEndPoint+"/"+response.file_name;
+                                 },
+                        'failure':function(response){
+                                    console.log(response);
+                                 }
+                    });
+                    break;
+        case 'JPG':
+                    break;
+    }
 }
