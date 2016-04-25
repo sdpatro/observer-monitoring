@@ -31,6 +31,7 @@ function updateSpecs(machineName){
                     $("#system").text(response.system);
                     $("#version").text(response.version);
                     $("#proc-arch").text(response.architecture[0]+" "+response.architecture[1]);
+                    $("#memory").text("Memory: "+(Math.round( response.memory/(1024*1024*1024) * 100) / 100).toString() +"GB");
                   },
         'failure':function(response){
                     console.log(response);

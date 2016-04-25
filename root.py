@@ -1,6 +1,5 @@
 __author__ = 'sdpatro'
 import Image
-import xlsxwriter
 import sys
 import StringIO
 from tornado import gen
@@ -8,10 +7,9 @@ import datetime
 import base64
 import json
 import operator
-import subprocess
-import shlex
-import dateutil.parser
 
+import xlsxwriter
+import dateutil.parser
 from pymongo import MongoClient
 from tornado.iostream import StreamClosedError
 from tornado.web import RequestHandler, Application
@@ -25,10 +23,10 @@ from selenium import webdriver
 
 import uimodules
 
+
 # The MongoDB server specifications, recommended to be deployed on the same drive as root server for faster access.
 DB_IP = '127.0.0.1'
 DB_PORT = 27017
-
 
 # Get MongoDB client.
 def get_db(ip, port):
@@ -43,17 +41,28 @@ def get_db(ip, port):
 db_connection = get_db(DB_IP, DB_PORT)
 
 
-# To check the ping of the remote sender
-def run_ping(ip):
-    process = subprocess.Popen(shlex.split("ping " + ip), stdout=subprocess.PIPE)
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            print "Output: " + output.strip()
-            # os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-    return process
+def init_instance_pricing():  # Initializing stuff
+    ec2_pricing = db_connection['cloud-pricing'].find_one({'name': 'amazon-ec2'})
+    if ec2_pricing is None:
+        ec2_pricing_json = {'instances': []}
+        ec2_pricing_json['instances'].append(
+            {'name': 't1.micro', 'vCpu': 1, 'memory': 0.6, 'io': 1, 'hourly-cost': 0.02})
+        ec2_pricing_json['instances'].append(
+            {'name': 't2.nano', 'vCpu': 1, 'memory': 0.5, 'io': 2, 'hourly-cost': 0.007})
+        ec2_pricing_json['instances'].append(
+            {'name': 't2.micro', 'vCpu': 1, 'memory': 1.0, 'io': 2.5, 'hourly-cost': 0.013})
+        ec2_pricing_json['instances'].append(
+            {'name': 't2.small', 'vCpu': 1, 'memory': 2.0, 'io': 2.5, 'hourly-cost': 0.026})
+        ec2_pricing_json['instances'].append(
+            {'name': 't2.medium', 'vCpu': 2, 'memory': 4.0, 'io': 2.5, 'hourly-cost': 0.052})
+        ec2_pricing_json['instances'].append(
+            {'name': 't2.large', 'vCpu': 2, 'memory': 8.0, 'io': 2.5, 'hourly-cost': 0.104})
+        ec2_pricing_json['instances'].append(
+            {'name': 'm4.large', 'vCpu': 2, 'memory': 8.0, 'io': 3, 'hourly-cost': 0.120})
+        ec2_pricing_json['instances'].append(
+            {'name': 'm4.xlarge', 'vCpu': 4, 'memory': 16.0, 'io': 4, 'hourly-cost': 0.239})
+        ec2_pricing_json['instances'].append(
+            {'name': 'm4.2xlarge', 'vCpu': 8, 'memory': 32.0, 'io': 4, 'hourly-cost': 0.479})
 
 
 # The TCP listener endpoint for all remote senders.
@@ -95,9 +104,10 @@ def update_machine(json_data, machine_ip):
     machine = db_connection["machines"].find_one({'name': machine_name, 'ip': machine_ip})
     if machine is None:
         db_connection["machines"].insert(
-                {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat()),
-                 'machine': json_data['machine'], 'node': json_data['node'], 'architecture': json_data['architecture'],
-                 'system': json_data['system'], 'release': json_data['release'], 'version': json_data['release']})
+            {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat()),
+             'machine': json_data['machine'], 'node': json_data['node'], 'architecture': json_data['architecture'],
+             'system': json_data['system'], 'release': json_data['release'], 'version': json_data['release'],
+             'memory': json_data['memory']})
     else:
         db_connection["machines"].update_one({'name': machine_name},
                                              {'$set': {'ip': machine_ip}})
@@ -192,7 +202,7 @@ class ObserverDriver:
             self.web_driver.set_window_size(height, width)
         snap_name = "files_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg"
         self.web_driver.save_screenshot(
-                snap_name)
+            snap_name)
 
         with open(snap_name,
                   "rb") as image_file:
@@ -207,8 +217,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
-                     record=record))
+            dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                 record=record))
 
     def button_click(self, button_id, record=False):
         start_time = datetime.datetime.now()
@@ -217,9 +227,9 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
-                     endTime=end_time.isoformat(),
-                     record=record))
+            dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
+                 endTime=end_time.isoformat(),
+                 record=record))
 
     def submit_form(self, form_element_id, record=False):
         start_time = datetime.datetime.now()
@@ -229,8 +239,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
-                     record=record))
+            dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                 record=record))
 
     def fill_form_element(self, form_element_id, input_text, record=False):
         start_time = datetime.datetime.now()
@@ -240,8 +250,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
-                     record=record))
+            dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                 record=record))
 
     def close_driver(self):
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
@@ -309,7 +319,7 @@ class ApiHandler(RequestHandler):
                     machine = db_connection["machines"].find_one({'name': machine_name})
                     self.finish({'machine': machine['machine'], 'node': machine['node'], 'version': machine['version'],
                                  'release': machine['release'], 'system': machine['system'],
-                                 'architecture': machine['architecture']})
+                                 'architecture': machine['architecture'], 'memory': machine['memory']})
 
             if action == "GET_STAT_DATA":
                 client_name = self.get_argument("client-name")
@@ -355,7 +365,7 @@ class ApiHandler(RequestHandler):
                     response_object = []
                     for test in tests:
                         response_object.append(
-                                {'name': test['name'], 'machine': test['machine']})
+                            {'name': test['name'], 'machine': test['machine']})
                     self.finish(dict(response_data=json.dumps({'tests':
                                                                    response_object})))
                 except Exception as e:
@@ -628,6 +638,13 @@ def get_delta_time_days(stat_records):
     return delta_time_days
 
 
+def get_delta_time_seconds(stat_records):
+    start_time = dateutil.parser.parse(stat_records[0]['date'])
+    end_time = dateutil.parser.parse(stat_records[len(stat_records) - 1]['date'])
+    delta_time_seconds = (end_time - start_time).seconds
+    return delta_time_seconds
+
+
 def get_uptime_percentage(machine):
     stat_count = db_connection["[" + machine + "]-stat"].count()
 
@@ -639,6 +656,20 @@ def get_uptime_percentage(machine):
     minutes_count = (new_timestamp - old_timestamp).seconds / 60
     minutes_count += (new_timestamp - old_timestamp).days * (24 * 60)
     return stat_count, minutes_count
+
+
+def get_bandwidth_usage(records):
+    dl_bytes = 0
+    ul_bytes = 0
+    for i in range(0, len(records)):
+        if records[i - 1]['bytes_recv'] > records[i]['bytes_recv'] and i > 0:
+            dl_bytes += records[i - 1]['bytes_recv']
+        if records[i - 1]['bytes_sent'] > records[i]['bytes_sent'] and i > 0:
+            ul_bytes += records[i - 1]['bytes_sent']
+
+    dl_bytes += records[len(records) - 1]['bytes_recv']
+    ul_bytes += records[len(records) - 1]['bytes_sent']
+    return dl_bytes, ul_bytes
 
 
 def condense_data_estimation(stat_records, minute_gradient):
@@ -716,32 +747,48 @@ class ComputeHandler(RequestHandler):
                 elif days_duration is None:
                     self.error_respond(400, "Days duration not specified.")
                 else:
-                    print "days_duration: " + days_duration
                     stat_records_cursor = db_connection["[" + machine + "]-stat"].find()
                     stat_records = []
 
                     for stat_record in stat_records_cursor:
                         stat_records.append(stat_record)
 
-                    i = 0
-                    initial_delta_time = dateutil.parser.parse(
+                    if len(stat_records) < 5:
+                        self.finish(dict(status="failure", message="Not enough data"))
+                    else:
+                        i = 0
+                        initial_delta_time = dateutil.parser.parse(
                             stat_records[len(stat_records) - 1]['date']) - dateutil.parser.parse(
                             stat_records[0]['date'])
-                    while int(get_delta_time_days(stat_records)) < int(days_duration):
-                        stat_records.append(stat_records[i].copy())
-                        cur_date = stat_records[len(stat_records) - 1]['date']
-                        cur_date = dateutil.parser.parse(cur_date)
-                        cur_date += initial_delta_time + datetime.timedelta(1, 60)
-                        stat_records[len(stat_records) - 1]['date'] = cur_date.isoformat()
-                        i += 1
-                    if int(len(stat_records) / 250) > 0:
-                        minute_gradient = int(len(stat_records) / 250)
-                    else:
-                        minute_gradient = 1
-                    stat_records = condense_data_estimation(stat_records, minute_gradient)
-                    for record in stat_records:
-                        record['_id'] = str(record['_id'])
-                    self.finish(dict(stat_data=stat_records))
+
+                        print "initial_delta_time " + str(initial_delta_time.days) + " " + str(
+                            initial_delta_time.seconds)
+                        if int(get_delta_time_days(stat_records)) < int(days_duration):
+                            while int(get_delta_time_days(stat_records)) < int(days_duration):
+                                stat_records.append(stat_records[i].copy())
+                                cur_date = stat_records[len(stat_records) - 1]['date']
+                                cur_date = dateutil.parser.parse(cur_date)
+                                cur_date += initial_delta_time + datetime.timedelta(1, 60)
+                                stat_records[len(stat_records) - 1]['date'] = cur_date.isoformat()
+                                i += 1
+                        else:
+                            while int(get_delta_time_days(stat_records)) > int(days_duration):
+                                stat_records = stat_records[:-1]
+                            while int(get_delta_time_seconds(stat_records)) > 60:
+                                stat_records = stat_records[:-1]
+
+                        if int(len(stat_records) / 250) > 0:
+                            minute_gradient = int(len(stat_records) / 250)
+                        else:
+                            minute_gradient = 1
+
+                        dl_bandwidth, ul_bandwidth = get_bandwidth_usage(stat_records)
+                        stat_records = condense_data_estimation(stat_records, minute_gradient)
+                        for record in stat_records:
+                            record['_id'] = str(record['_id'])
+                        self.finish(
+                            dict(status="success", stat_data=stat_records,
+                                 misc_data={'dl_bandwidth': dl_bandwidth, 'ul_bandwidth': ul_bandwidth}))
 
         else:
             self.error_respond(400, "No action specified")

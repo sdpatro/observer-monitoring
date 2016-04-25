@@ -87,7 +87,7 @@ def run_remote():
     try:
         specs = {"machine": platform.platform(), "node": platform.node(), "architecture": [platform.architecture()[0],platform.architecture()[1]],
                  "system": platform.system(), "release": platform.release(), "version": platform.version(),
-                 "name": remote_name}
+                 "name": remote_name, "memory": psutil.virtual_memory().total}
         specs = json.dumps(specs)
         text = str(specs) + '\n'
         yield stream.write(text.encode('utf-8'))

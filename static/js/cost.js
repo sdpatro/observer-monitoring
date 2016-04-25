@@ -2,6 +2,8 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
     fetchUtilization(document.cookie);
+    _chartHeight = 400;
+    _chartWidth = 800;
     fetchExtrapolatedCharts(1);
 });
 
@@ -10,6 +12,8 @@ cpuData = [[],[],[],[]];
 ramData = [];
 netData = [[],[]];
 storageData = [];
+_chartHeight = 0;
+_chartWidth = 0;
 
 function emptyRecords(){
     statData = [];
@@ -54,13 +58,23 @@ function fetchExtrapolatedCharts(daysDuration){
         'dataType':'json',
         'data':dataJson,
         'success':function(response){
-                    emptyRecords();
-                    statData = response['stat_data'];
-                    statData.forEach(generateData_CPU);
-                    statData.forEach(generateData_RAM);
-                    statData.forEach(generateData_Net);
-                    statData.forEach(generateData_Storage);
-                    attachCpuEstimationChart(statData);
+                    if(response['status']=='success')
+                    {
+                        console.log("dl_bandwidth: "+response['misc_data']['dl_bandwidth']);
+                        emptyRecords();
+                        statData = response['stat_data'];
+                        statData.forEach(generateData_CPU);
+                        statData.forEach(generateData_RAM);
+                        statData.forEach(generateData_Net);
+                        statData.forEach(generateData_Storage);
+                        attachCpuEstimationChart(statData);
+
+                        setNetDemandStats(response['misc_data']);
+                    }
+                    else{
+                        alert(response['message']);
+                    }
+
                   },
         'failure':function(response){
                     console.log(response);
@@ -88,12 +102,20 @@ function setCpuDemandStats(){
     $("#cpu_demand_stats").text("Mean "+cpuDataMean.toString()+" Median: "+cpuDataMedian);
 }
 function setRamDemandStats(){
-
+    temp_sum = 0;
+    for(var i=0 ; i<ramData.length ; i++){
+        temp_sum += ramData[i][1];
+    }
+    ramData_mean = Math.round(temp_sum/ramData.length * 100) / 100;
+    ramData = ramData.sort();
+    ramData_median = Math.round(ramData[Math.round(ramData.length/2)][1] * 100) / 100;
+    $("#ram_demand_stats").text("Mean: "+ramData_mean+" Median: "+ramData_median);
 }
-function setNetDemandStats(){
-
+function setNetDemandStats(misc_data){
+    dl_bandwidth_gb = Math.round(misc_data['dl_bandwidth']/(1024*1024*1024) * 100) / 100;
+    ul_bandwidth_gb = Math.round(misc_data['ul_bandwidth']/(1024*1024*1024) * 100) / 100;
+    $("#net_demand_stats").text("Total GB downloaded: "+dl_bandwidth_gb.toString()+" Total GB uploaded: "+ul_bandwidth_gb.toString());
 }
-
 
 function attachCpuEstimationChart(records){
     var cpuSeries = [];
@@ -119,10 +141,10 @@ function attachCpuEstimationChart(records){
     zingchart.render({
         id:'cpu_demand_curve',
         data:chartData,
-        height:400,
-        width:600
+        height:_chartHeight,
+        width:_chartWidth
     });
-
+    setCpuDemandStats();
 
     // RAM
     var chartData={
@@ -144,11 +166,11 @@ function attachCpuEstimationChart(records){
     zingchart.render({
         id:'ram_demand_curve',
         data:chartData,
-        height:400,
-        width:600
+        height:_chartHeight,
+        width:_chartWidth
     });
 
-    setCpuDemandStats();
+    setRamDemandStats();
 
     // Net
     var chartData={
@@ -171,8 +193,8 @@ function attachCpuEstimationChart(records){
     zingchart.render({
         id:'net_demand_curve',
         data:chartData,
-        height:400,
-        width:600
+        height:_chartHeight,
+        width:_chartWidth
     });
 }
 
