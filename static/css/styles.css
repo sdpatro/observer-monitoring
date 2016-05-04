@@ -1,174 +1,101 @@
-html,body {
-  height: 100%;
+body{
+    margin-bottom: 100px;
 }
 
-/* wrapper for page content to push down footer */
-.page-container {
-  min-height: 100%;
-  height: auto !important;
-  height: 100%;
-  /* negative indent footer by its height */
-  margin: 0 auto -120px;
-  /* pad bottom by footer height */
-  padding: 0 0 120px;
+a.list-group-item{
+    width: 85%;
+    border-radius: 0;
+    background-color: Transparent;
+    color: #ffffff;
+    padding: 10px;
+    font-size:0.9em;
+    border-radius: 0px;
+}
+a.list-group-item:hover{
+    cursor: default;
+}
+a.list-group-item.active{
+    background-color: #eeeeee;
+    color:#222222;
+    border-color: #eeeeee;
+}
+#main-container{
+    padding-top: 70px;
 }
 
-.page-container-inverse{
-  min-height: 100%;
-  height: auto !important;
-  height: 100%;
-  /* negative indent footer by its height */
-  margin: 0 auto -120px;
-  /* pad bottom by footer height */
-  padding: 0 0 120px;
-  background-color:white;
+#currentMachineHeader{
+    margin-bottom: 30px;
+    margin-left: 10px;
 }
 
-/* set the fixed height of the footer here */
-#footer {
-  height: 120px;
-  background-color: #222222;
-  border:0 solid #080808;
-  border-top-width: 1px;
-  margin-top:50px;
-  z-index:100;
+#sys-uptime{
+    font-size: 1.2em;
 }
 
-#footer > .container {
-  padding: 20px;
+.meter{
+    border-radius: 0px;
+    display: block;
+    width: 175px;
+    margin: 5px;
+    text-align: center;
+    background-color: #444444;
+}
+.meter-info{
+    display: inline-block;
+    margin: 5px;
+}
+.meter-color{
+    display: inline-block;
+    margin-right: 5px;
+    height: 10px;
+    width: 10px;
+}
+.meter-usage{
+    display: inline-block;
+    width: 50px;
+}
+.usage-data{
+    float: left;
+    width: 50%;
+    display: inline-block;
+}
+.misc-data{
+    float: right;
+    width: 50%;
+    padding-top: 10px;
+    display: inline-block;
+}
+.misc-data-component{
+    margin-bottom: 5px;
 }
 
-#footer a{
-  color:#cccccc;
+.spec-component{
+    margin-bottom: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+    opacity: 1;
 }
 
-#footer a:hover {
-  color:#ffffff;
-  margin-left:-2px;
-  text-decoration:none;
+.spec-value{
+    font-size: 1.5em;
+    opacity: 1;
+    font-weight: normal;
 }
 
-body {
-  padding-top: 51px; 
-  background: #1E1E1E;
-  color: #f9f9f9;
+#specs-os{
+    float: right;
+    font-size: 9em;
+    margin-right: 50px;
 }
 
-li{
-  color: #232323;
-}
-a {
-  color:#efefef;
-}
-.text-center {
-  padding-top: 20px;
+#specs{
+    float: left;
 }
 
-#sidebar {
-  height: 100%;
-  padding-right: 0;
-  padding-top: 20px;
-  z-index:0;
+h3{
+    margin-bottom: 10px;
 }
 
-#sidebar .affix {
-  position:fixed;
-  top:55;
-  width:220px;
-}
-
-#sidebar .affix-bottom {
-  position:fixed;
-  top:55;
-  width:220px;
-}
-
-#sidebar .nav {
-  width: 95%;
-}
-#sidebar li {
-  border:0 #1e1e1e solid;
-  border-bottom-width:1px;
-}
-#sidebar li a {
-  padding-left:1px;
-}
-#sidebar li a:hover {
-  background-color:#222222;
-  color:#ffffff;
-}
-
-/* collapsed sidebar styles */
-@media screen and (max-width: 767px) {
-  .row-offcanvas {
-    position: relative;
-    -webkit-transition: all 0.25s ease-out;
-    -moz-transition: all 0.25s ease-out;
-    transition: all 0.25s ease-out;
-  }
-  .row-offcanvas-right
-  .sidebar-offcanvas {
-    right: -41.6%;
-  }
-
-  .row-offcanvas-left
-  .sidebar-offcanvas {
-    left: -41.6%;
-  }
-  .row-offcanvas-right.active {
-    right: 41.6%;
-  }
-  .row-offcanvas-left.active {
-    left: 41.6%;
-  }
-  .sidebar-offcanvas {
-    position: absolute;
-    top: 0;
-    width: 41.6%;
-  }
-  #sidebar {
-    background-color:#3b3b3b;
-    padding-top:0;
-  }
-  #sidebar .nav>li {
-    color: #ddd;
-    background: linear-gradient(#3E3E3E, #383838);
-    border-top: 1px solid #484848;
-    border-bottom: 1px solid #2E2E2E;
-    padding-left:10px;
-  }
-  #sidebar .nav>li:first-child {
-    border-top:0;
-  }
-  #sidebar .nav>li>a {
-    color: #ddd;
-  }
-  #sidebar .nav>li>a>img {
-    max-width: 14px;
-  }
-  #sidebar .nav>li>a:hover, #sidebar .nav>li>a:focus {
-    text-decoration: none;
-    background: linear-gradient(#373737, #323232);
-    color: #fff;  
-  }
-  #sidebar .nav .caret {
-    border-top-color: #fff;
-    border-bottom-color: #fff;
-  }
-  #sidebar .nav a:hover .caret{
-    border-top-color: #fff;
-    border-bottom-color: #fff;
-  }
-}
-
-.panel-body,.panel-footer{
-  color: #333333;
-}
-
-// d3 stuff
-
-div.bar{
-   background-color: #ff0000;
-   height: 50px;
-   width: 50px;
+.row{
+    margin-bottom: 10px;
 }

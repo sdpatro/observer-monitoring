@@ -1,13 +1,23 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
+    console.log("document cookie "+document.cookie);
+    if(document.cookie != ""){
+        initiateLive();
+    }
+    else{
+        showIdle(true);
+    }
+});
+
+function initiateLive(){
     pollLiveData();
     runGraph_CPU();
     runGraph_RAM();
     runGraph_disk();
     runGraph_net();
     update_uptime();
-});
+}
 
 liveDataCache = [];
 
@@ -82,13 +92,13 @@ function runGraph_CPU(){
             }
         }
         for(var i=0 ; i<cpuCoreCount ; i++){
-            $("#cpu"+i+"-meter").text("CPU"+i+": " + dataUnit.cpu[i]+"%");
+            $("#cpu"+i+"-meter").html("<div class=\"meter-color\" style=\"background-color:"+colors[i]+"\"></div><div class=\"meter-info\">CPU"+i+":</div><div class=\"meter-usage\">"+dataUnit["cpu"][i]+"%</div>");
         }
         for(var i=0 ; i<cpuCoreCount ; i++){
             cpuTimeSeries[i].append(new Date().getTime(), dataUnit.cpu[i]);
         }
-        $("#cpu-ctx-switches").text("Context Switches: "+dataUnit["cpu_ctx_switches"]);
-        $("#cpu-interrupts").text("Interrupts: "+dataUnit["cpu_interrupts"]);
+        $("#cpu-ctx-switches").html("Context Switches: <b>"+dataUnit["cpu_ctx_switches"]+"</b>");
+        $("#cpu-interrupts").html("Interrupts: <b>"+dataUnit["cpu_interrupts"]+"</b>");
       }
     }, 1000);
 }
@@ -104,15 +114,15 @@ function runGraph_RAM(){
       if(liveDataCache.length>0)
       {
         dataUnit = liveDataCache[(liveDataCache).length-1];
-        $("#ram-meter").text("RAM: "+dataUnit.ram+" %");
-        $("#swap-meter").text("Swap: "+dataUnit.swap+" %");
+        $("#ram-meter").html("<div class=\"meter-color\" style=\"background-color:#99a367\"></div><div class=\"meter-info\">RAM: </div><div class=\"meter-usage\">"+dataUnit["ram"]+"%</div>");
+        $("#swap-meter").html("<div class=\"meter-color\" style=\"background-color:#c4b200\"></div><div class=\"meter-info\">Swap: </div><div class=\"meter-usage\">"+dataUnit["swap"]+"%</div>");
         ram.append(new Date().getTime(), dataUnit.ram);
         swap.append(new Date().getTime(), dataUnit.swap);
 
-        $("#ram-available").text("RAM Available: "+dataUnit["ram-available"]/(1024*1024*1024)+" GB");
-        $("#ram-used").text("RAM Used: "+dataUnit["ram-used"]/(1024*1024*1024)+" GB");
-        $("#swap-total").text("Swap Total: "+dataUnit["swap-total"]/(1024*1024*1024)+" GB");
-        $("#swap-used").text("Swap Used: "+dataUnit["swap-used"]/(1024*1024*1024)+" GB");
+        $("#ram-available").html("RAM Available: <b>"+roundOff(dataUnit["ram-available"]/(1024*1024*1024))+" GB</b>");
+        $("#ram-used").html("RAM Used: <b>"+roundOff(dataUnit["ram-used"]/(1024*1024*1024))+" GB</b>");
+        $("#swap-total").html("Swap Total: <b>"+roundOff(dataUnit["swap-total"]/(1024*1024*1024))+" GB</b>");
+        $("#swap-used").html("Swap Used: <b>"+roundOff(dataUnit["swap-used"]/(1024*1024*1024))+" GB</b>");
       }
     }, 1000);
 
@@ -131,10 +141,11 @@ function runGraph_disk(){
       if(liveDataCache.length>0)
       {
         dataUnit = liveDataCache[(liveDataCache).length-1];
-        $("#disk-read-meter").text("Read: "+dataUnit.disk_read_rate/(1024) + " bytes/s");
-        $("#disk-write-meter").text("Write: "+dataUnit.disk_write_rate/(1024) + " bytes/s");
-        $("#disk-total").text("Disk Total: "+dataUnit.disk_total/(1024*1024)+" GB");
-        $("#disk-used").text("Disk Used: "+dataUnit.disk_used/(1024*1024)+" GB");
+        $("#disk-read-meter").html("<div class=\"meter-color\" style=\"background-color:#3ff4cb\"></div><div class=\"meter-info\">Read rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["disk_read_rate"]/(1024))+" KB/s</div>");
+        $("#disk-write-meter").html("<div class=\"meter-color\" style=\"background-color:#f43f68\"></div><div class=\"meter-info\">Write rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["disk_write_rate"]/(1024))+" KB/s</div>");
+
+        $("#disk-total").html("Disk Total: <b>"+roundOff(dataUnit.disk_total/(1024*1024))+" GB</b>");
+        $("#disk-used").html("Disk Used: <b>"+roundOff(dataUnit.disk_used/(1024*1024))+" GB</b>");
         disk_read.append(new Date().getTime(), dataUnit.disk_read_rate/1024);
         disk_write.append(new Date().getTime(), dataUnit.disk_write_rate/1024);
       }
@@ -155,19 +166,19 @@ function runGraph_net(){
       if(liveDataCache.length>0)
       {
         dataUnit = liveDataCache[(liveDataCache).length-1];
-        $("#net-send-meter").text("Net TX: " + dataUnit.ul_rate/1024 + " kb/s");
-        $("#net-recv-meter").text("Net RX: " + dataUnit.dl_rate/1024 + " kb/s");
+        $("#net-send-meter").html("<div class=\"meter-color\" style=\"background-color:#991300\"></div><div class=\"meter-info\">Upload rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["ul_rate"]/(1024))+" KB/s</div>");
+        $("#net-recv-meter").html("<div class=\"meter-color\" style=\"background-color:#262835\"></div><div class=\"meter-info\">Download rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["dl_rate"]/(1024))+" KB/s</div>");
         net_send.append(new Date().getTime(), dataUnit.ul_rate/1024);
         net_recv.append(new Date().getTime(), dataUnit.dl_rate/1024);
-        $("#sent-total").text("Sent: "+dataUnit.bytes_sent/(1024*1024)+" MB");
-        $("#recv-total").text("Received: "+dataUnit.bytes_recv/(1024*1024)+" MB");
-        $("#packets-sent").text("Packets sent: "+dataUnit.packets_sent/(1024*1024)+" MB");
-        $("#packets-recv").text("Packets received: "+dataUnit.packets_recv/(1024*1024)+" MB");
+        $("#sent-total").html("Sent: <b>"+roundOff(dataUnit.bytes_sent/(1024*1024))+" MB</b>");
+        $("#recv-total").html("Received: <b>"+roundOff(dataUnit.bytes_recv/(1024*1024))+" MB</b>");
+        $("#packets-sent-total").html("Packets sent/dropped: <b>"+dataUnit.packets_sent[0]+"/"+dataUnit.packets_sent[1]+"</b>");
+        $("#packets-recv-total").html("Packets received/dropped: <b>"+dataUnit.packets_recv[0]+"/"+dataUnit.packets_recv[1]+"</b>");
       }
     }, 1000);
 
     smoothie.addTimeSeries(net_send,{'strokeStyle':'#991300','fillStyle':'rgba(152,19,0,0.2)'});
-    smoothie.addTimeSeries(net_recv,{'strokeStyle':'#262835','fillStyle':'rgba(38,40,53,0.2)'});
+    smoothie.addTimeSeries(net_recv,{'strokeStyle':'#262835','fillStyle':'rgba(38,40,53,0.4)'});
 }
 
 function pollLiveData(){

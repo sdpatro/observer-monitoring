@@ -13,71 +13,86 @@
             </div>
         </div>
     </div>
-    <div class="container">
+    <div id="main-container" class="container">
         <div class="row row-offcanvas row-offcanvas-left">
 
             {% module sideBarModuleTemplate() %}
 
             <!-- main area -->
-            <div class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
+            <div id="main-area" class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
                 <h1 class="row" id="section1">Live Monitoring</h1>
                 <div class="row">
-                    <h3>System Uptime</h3>
+                    <h3><i style="margin-right:20px" class="fa fa-clock-o" aria-hidden="true"></i>System Uptime</h3>
                     <div id="sys-uptime"></div>
                 </div>
                 <div class="row">
-                    <h3>CPU Usage</h3>
+                    <h3><i style="margin-right:20px" class="fa fa-building" aria-hidden="true"></i>CPU Usage</h3>
                     <canvas id="graph-cpu" width="800" height="200"></canvas>
                     <br>
-                    <div id="cpu0-meter" class="badge badge-default"></div>
-                    <div id="cpu1-meter" class="badge badge-default"></div>
-                    <div id="cpu2-meter" class="badge badge-default"></div>
-                    <div id="cpu3-meter" class="badge badge-default"></div>
-                    <div id="cpu-misc-data">
-                        <div id="cpu-ctx-switches"></div>
-                        <div id="cpu-interrupts"></div>
+                    <div class="usage-data">
+                        <div id="cpu0-meter" class="meter badge badge-default"></div>
+                        <div id="cpu1-meter" class="meter badge badge-default"></div>
+                        <div id="cpu2-meter" class="meter badge badge-default"></div>
+                        <div id="cpu3-meter" class="meter badge badge-default"></div>
+                    </div>
+                    <div class="misc-data">
+                        <div id="cpu-ctx-switches" class="misc-data-component"></div>
+                        <div id="cpu-interrupts" class="misc-data-component"></div>
                     </div>
                 </div>
                 <div class="row">
-                    <h3>RAM/Swap usage</h3>
+                    <h3><i style="margin-right:20px" class="fa fa-barcode" aria-hidden="true"></i>RAM/Swap usage</h3>
                     <canvas id="graph-ram" width="800" height="200"></canvas>
                     <br>
-                    <div id="ram-meter" class="badge badge-default"></div>
-                    <div id="swap-meter" class="badge badge-default"></div>
-                    <div id="ram-swap-misc-data">
-                        <div id="ram-available"></div>
-                        <div id="ram-used"></div>
-                        <div id="swap-total"></div>
-                        <div id="swap-used"></div>
+                    <div class="usage-data">
+                        <div id="ram-meter" class="meter badge badge-default"></div>
+                        <div id="swap-meter" class="meter badge badge-default"></div>
+                    </div>
+                    <div class="misc-data">
+                        <div id="ram-available" class="misc-data-component"></div>
+                        <div id="ram-used" class="misc-data-component"></div>
+                        <div id="swap-total" class="misc-data-component"></div>
+                        <div id="swap-used" class="misc-data-component"></div>
                     </div>
                 </div>
                 <div class="row">
-                    <h3>Disk IO rate</h3>
+                    <div class="separator"></div>
+                </div>
+                <div class="row">
+                    <h3><i style="margin-right:20px" class="fa fa-hdd-o" aria-hidden="true"></i>Disk IO rate</h3>
                     <canvas id="graph-disk" width="800" height="200"></canvas>
                     <br>
-                    <div id="disk-read-meter" class="badge badge-default"></div>
-                    <div id="disk-write-meter" class="badge badge-default"></div>
-                    <div id="disk-misc-data">
-                        <div id="disk-total"></div>
-                        <div id="disk-used"></div>
+                    <div class="usage-data">
+                        <div id="disk-read-meter" class="meter badge badge-default"></div>
+                        <div id="disk-write-meter" class="meter badge badge-default"></div>
+                    </div>
+                    <div class="misc-data">
+                        <div id="disk-total" class="misc-data-component"></div>
+                        <div id="disk-used" class="misc-data-component"></div>
                     </div>
                 </div>
                 <div class="row">
-                    <h3>Network IO counter</h3>
+                    <h3><i style="margin-right:20px" class="fa fa-wifi" aria-hidden="true"></i>Network IO counter</h3>
                     <canvas id="graph-network" width="800" height="200"></canvas>
                     <br>
-                    <div id="net-send-meter" class="badge badge-default"></div>
-                    <div id="net-recv-meter" class="badge badge-default"></div>
-                    <div id="net-misc-data">
-                        <div id="packets-sent-total"></div>
-                        <div id="packets-recv-total"></div>
-                        <div id="sent-total"></div>
-                        <div id="recv-total"></div>
+                    <div class="usage-data">
+                        <div id="net-send-meter" class="meter badge badge-default"></div>
+                        <div id="net-recv-meter" class="meter badge badge-default"></div>
+                    </div>
+                    <div class="misc-data">
+                        <div id="packets-sent-total" class="misc-data-component"></div>
+                        <div id="packets-recv-total" class="misc-data-component"></div>
+                        <div id="sent-total" class="misc-data-component"></div>
+                        <div id="recv-total" class="misc-data-component"></div>
                     </div>
                 </div>
-
             </div>
             <!-- /.col-xs-12 main -->
+            <div id="idle-area" class="col-xs-12 col-sm-9" style="display:none;">
+                <h2>No machine is currently selected</h2>
+                <h3>Choose a machine shown in the list on the left side.</h3>
+            </div>
+            <!--idle-area-->
         </div>
         <!--/.row-->
     </div>

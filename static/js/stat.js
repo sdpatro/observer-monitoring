@@ -2,9 +2,21 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
-  updateSpecs(document.cookie);
-  getStatData(document.cookie);
+
+  if(document.cookie != "")
+  {
+    initiateStat();
+  }
+  else{
+    show-idle(true);
+  }
+
 });
+
+function initiateStat(){
+    updateSpecs(document.cookie);
+    getStatData(document.cookie);
+}
 
 statData = [];
 cpuData = [[],[],[],[]];
@@ -14,7 +26,7 @@ storageData = [];
 
 function updateStorage(record){
     if(storageData.length>0){
-        $("#storage").text("Disk Used: "+record["disk_used"]+", Disk Total: "+record["disk_total"]);
+        $("#storage").text(roundOff(record["disk_total"]/(1024*1024*1024))+" GB");
     }
 }
 
@@ -29,14 +41,22 @@ function updateSpecs(machineName){
                     $("#machine").text(response.machine);
                     $("#node").text(response.node);
                     $("#system").text(response.system);
+                    setOperatingSystem(response.system);
                     $("#version").text(response.version);
                     $("#proc-arch").text(response.architecture[0]+" "+response.architecture[1]);
-                    $("#memory").text("Memory: "+(Math.round( response.memory/(1024*1024*1024) * 100) / 100).toString() +"GB");
+                    $("#memory").text(roundOff(response.memory/(1024*1024*1024)).toString() +"GB");
                   },
         'failure':function(response){
                     console.log(response);
                   }
     });
+}
+
+function setOperatingSystem(system){
+    if(system=="Linux")
+        $("#specs-os").html("<i style=\"margin-right:20px\" class=\"fa fa-linux\" aria-hidden=\"true\"></i>")
+    else if(system == "Windows")
+        $("#specs-os").html("<i style=\"margin-right:20px\" class=\"fa fa-windows\" aria-hidden=\"true\"></i>")
 }
 
 function renderGraphs(){
@@ -55,8 +75,7 @@ function renderGraphs(){
         },
       "scale-x":{
         "transform":{
-          "type":"date",
-          "all":"%H:%i"
+          "type":"date"
         }
       },
       "series": cpuSeries
@@ -79,8 +98,7 @@ function renderGraphs(){
         },
       "scale-x":{
         "transform":{
-          "type":"date",
-          "all":"%H:%i"
+          "type":"date"
         }
       },
       "series": [
@@ -104,8 +122,7 @@ function renderGraphs(){
         },
       "scale-x":{
         "transform":{
-          "type":"date",
-          "all":"%H:%i"
+          "type":"date"
         }
       },
       "series": [
@@ -130,8 +147,7 @@ function renderGraphs(){
         },
       "scale-x":{
         "transform":{
-          "type":"date",
-          "all":"%H:%i"
+          "type":"date"
         }
       },
       "series": [

@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <div class="container">
+    <div id="main-container" class="container">
         <div class="row row-offcanvas row-offcanvas-left">
             {% module sideBarModuleTemplate() %}
 
@@ -23,32 +23,52 @@
             <div class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
                 <h1 id="section1" class="row">Statistical Usage Data</h1>
                 <div class="row">
-                    <h3>System Specifications</h3>
-                    <div id="machine"></div>
-                    <div id="node"></div>
-                    <div id="system"></div>
-                    <div id="version"></div>
-                    <div id="proc-arch"></div>
-                    <div id="storage"></div>
-                    <div id="memory"></div>
+                    <h3><i style="margin-right:20px" class="fa fa-server" aria-hidden="true"></i>System Specifications
+                    </h3>
+                    <div id="specs">
+                        <div class="spec-component">MACHINE
+                            <div id="machine" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">NODE NAME
+                            <div id="node" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">OPERATING SYSTEM
+                            <div id="system" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">OS VERSION
+                            <div id="version" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">PROCESSOR ARCHITECTURE
+                            <div id="proc-arch" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">STORAGE
+                            <div id="storage" class="spec-value"></div>
+                        </div>
+                        <div class="spec-component">MEMORY
+                            <div id="memory" class="spec-value"></div>
+                        </div>
+                    </div>
+                    <div id="specs-os">
+
+                    </div>
                 </div>
                 <div class="row">
-                    <h2>CPU Usage Stats</h2>
+                    <h3>CPU Usage Stats</h3>
 
                     <div id='cpu_chart'></div>
                 </div>
                 <div class="row">
-                    <h2>RAM Usage Stats</h2>
+                    <h3>RAM Usage Stats</h3>
 
                     <div id='ram_chart'></div>
                 </div>
                 <div class="row">
-                    <h2>Network Usage Stats</h2>
+                    <h3>Network Usage Stats</h3>
 
                     <div id='net_chart'></div>
                 </div>
                 <div class="row">
-                    <h2>Storage Usage Stats</h2>
+                    <h3>Storage Usage Stats</h3>
 
                     <div id='storage_chart'></div>
                 </div>

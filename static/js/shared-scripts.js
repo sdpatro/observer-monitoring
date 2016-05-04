@@ -13,7 +13,7 @@ function pageInit(){
         document.cookie = "remote-laptop";
         _common = {"currentMachine":document.cookie};
     }
-    $("#currentMachineHeader").text(document.cookie);
+    $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+document.cookie);
 }
 
 function remoteMachinesUpdater(){
@@ -36,19 +36,51 @@ function remoteMachinesUpdater(){
 function loadRemoteMachines(remoteMachines){
     $("#machines-remote").empty();
     for(var i=0 ; i<remoteMachines.length ; i++){
-        lastOnlineStamp = new Date(remoteMachines[i]["last_online"])
+        lastOnlineStamp = new Date(remoteMachines[i]["last_online"]*1000)
         currentStamp = new Date();
         timeDiff = currentStamp-lastOnlineStamp;
         var status = "online";
         if(timeDiff/1000 > 10){
             status = "offline";
         }
-        var $item = $("<a class=\"list-group-item\" onclick='changeMachine(\""+remoteMachines[i].name+"\",\""+remoteMachines[i].ip+"\");'>"+remoteMachines[i].name+" "+remoteMachines[i].ip+" "+status+"</a>");
+        var $item = getListItem(remoteMachines[i].name,remoteMachines[i].ip,status);
         $("#machines-remote").append($item);
     }
+}
+
+function getListItem(name,ip,status){
+    var listItemElementString = "<a class=\"list-group-item\" onclick='changeMachine(\""+name+"\",\""+ip+"\");'><b style=\"padding-right:10px\">"+name+"</b></a>";
+    var $listItemElement = $(listItemElementString);
+
+    if(status=="online")
+        $listItemElement.append($("<i style=\"float:right\" class=\"fa fa-exchange\" aria-hidden=\"true\"></span>"));
+    else
+        $listItemElement.append($("<i style=\"float:right; visibility:hidden;\" class=\"fa fa-exchange\" aria-hidden=\"true\"></span>"));
+    if(document.cookie == name)
+        $listItemElement.addClass("active");
+
+    $listItemElement.append($("<div style=\"float:right; padding-right:10px;\">"+ip+"</div>"));
+    return $listItemElement;
 }
 
 function changeMachine(machineName,machineIP){
     document.cookie = machineName;
     location.reload();
+}
+
+function showIdle(status){
+    console.log("showIdle "+status);
+    if(status == true) // Show idle
+    {
+        $("#main-area").css('display','none');
+        $("#idle-area").show();
+    }
+    else{   // Remove idle
+        $("#idle-area").css('display','none');
+        $("#main-area").show();
+    }
+}
+
+function roundOff(num){
+    return (Math.round(num*100))/100;
 }
