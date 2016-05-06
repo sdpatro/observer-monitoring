@@ -144,8 +144,8 @@ function runGraph_disk(){
         $("#disk-read-meter").html("<div class=\"meter-color\" style=\"background-color:#3ff4cb\"></div><div class=\"meter-info\">Read rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["disk_read_rate"]/(1024))+" KB/s</div>");
         $("#disk-write-meter").html("<div class=\"meter-color\" style=\"background-color:#f43f68\"></div><div class=\"meter-info\">Write rate: </div><div class=\"meter-usage\">"+roundOff(dataUnit["disk_write_rate"]/(1024))+" KB/s</div>");
 
-        $("#disk-total").html("Disk Total: <b>"+roundOff(dataUnit.disk_total/(1024*1024))+" GB</b>");
-        $("#disk-used").html("Disk Used: <b>"+roundOff(dataUnit.disk_used/(1024*1024))+" GB</b>");
+        $("#disk-total").html("Disk Total: <b>"+roundOff(dataUnit.disk_total/(1024*1024*1024))+" GB</b>");
+        $("#disk-used").html("Disk Used: <b>"+roundOff(dataUnit.disk_used/(1024*1024*1024))+" GB</b>");
         disk_read.append(new Date().getTime(), dataUnit.disk_read_rate/1024);
         disk_write.append(new Date().getTime(), dataUnit.disk_write_rate/1024);
       }

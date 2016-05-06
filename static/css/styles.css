@@ -92,10 +92,107 @@ a.list-group-item.active{
     float: left;
 }
 
+.chart-info{
+    border-radius: 0px;
+    display: inline-block;
+    width: 125px;
+    margin-top: 5px;
+    text-align: center;
+    background-color: #444444;
+}
+
 h3{
     margin-bottom: 10px;
 }
 
 .row{
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.btn.btn-default{
+    border-radius: 0px;
+    background: transparent;
+    border: 2px solid #dedede;
+    color: #dedede;
+    font-weight: bold;
+}
+.btn.btn-default:hover{
+    background: #dedede;
+    color: #222222;
+}
+.btn.btn-default:active{
+    background: #eeeeee;
+    color: #222222;
+}
+
+.test-list-item{
+    background-color: transparent;
+    border: 1px solid #dedede;
+}
+.test-list-item.active{
+    background-color: #dedede;
+    color: #222222;
+}
+.test-list-item:hover{
+    background-color: #dedede;
+    color: #222222;
+    cursor: default;
+}
+.test-list-item:active{
+    background-color: #eeeeee;
+    color: #222222;
+}
+.test-list-item:first-child{
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
+}
+.test-list-item:last-child{
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+#custom-test{
+    display: inline-block;
+    margin-top: 20px;
+    width: 100%;
+}
+
+#run-test-btn{
+    margin-right: 20px;
+}
+
+#test-name-input{
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    display: inline-block;
+    width: 50%;
+    border: 2px solid #dedede;
+    background: #444444;
+    color: #dedede;
+}
+
+#code-input{
+    width: 100%;
+    border: none;
+    height: 300px;
+}
+
+#save-test-btn{
+    display: inline-block;
+}
+
+.perf-test-chart{
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+#steps-list{
+    background-color: #444444;
+    font-size: 1.1em;
+    padding: 10px;
+    margin: 2px;
+    width: 80%;
+    margin-bottom: 20px;
 }

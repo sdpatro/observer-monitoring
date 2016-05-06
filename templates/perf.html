@@ -1,4 +1,4 @@
-{% module headModuleTemplate("Performance Testing",["js/perf.js","js/Chart.js","js/Chart.HorizontalBar.js","js/smoothie.js"]) %}
+{% module headModuleTemplate("Performance Testing",["js/perf.js","js/Chart.Line.js","js/Chart.js","js/Chart.HorizontalBar.js","js/smoothie.js","js/codemirror.js","js/mode-python.js"]) %}
 <body>
 <div class="page-container">
 
@@ -16,100 +16,94 @@
         </div>
     </div>
 
-    <div class="container">
+    <div id="main-container" class="container">
         <div class="row row-offcanvas row-offcanvas-left">
             {% module sideBarModuleTemplate() %}
 
             <!-- main area -->
-            <div class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
+            <div id="main-area" class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
                 <h1 class="row" id="section1">Performance Testing</h1>
 
                 <div class="row">
-                    <h3>Sample Tests</h3>
+                    <h3><i style="margin-right:20px" class="fa fa-code" aria-hidden="true"></i>Browser Automation
+                        Scripts</h3>
 
-                    <div class="panel-group col-lg-9" id="test-custom">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 id="test-name-header" class="panel-title">
-                                    Custom Test
-                                </h4>
-                            </div>
-                            <div class="panel-body">
-                                <textarea id="code-input"
-                                          style="width:400px; height:300px; background-color:black; color:white;">
-                                </textarea>
-                            </div>
-                            <div class="panel-footer">
-                                <button type="button" class="btn btn-primary" onclick="runCustomTest()">Run Custom Test
-                                </button>
-                                <div class="input-group">
-                                    <input id="test-name-input" type="text" class="form-control"
-                                           placeholder="TestName...">
-                                  <span class="input-group-btn">
-                                    <button class="btn btn-default" type="button" onclick="saveTest()">Save Test
-                                    </button>
-                                  </span>
-                                </div>
-                                <!-- /input-group -->
-                            </div>
+                    <div class="col-lg-9">
+                        <h4 id="test-name-header">
+                            Custom Test
+                        </h4>
+
+                        <div>
+                            <textarea id="code-input"></textarea>
+                        </div>
+                        <div id="custom-test">
+                            <button id="run-test-btn" type="button" class="btn btn-default" onclick="runCustomTest()"><i
+                                    style="margin-right:20px" class="fa fa-play" aria-hidden="true"></i>RUN
+                            </button>
+                            <input id="test-name-input" type="text" class="form-control"
+                                   placeholder="Enter the test name here..." onsubmit="saveTest()">
+                            <button id="save-test-btn" class="btn btn-default" type="button" onclick="saveTest()"><i
+                                    style="margin-right:20px" class="fa fa-floppy-o" aria-hidden="true"></i>SAVE TEST
+                            </button>
                         </div>
                     </div>
-                    <!--test-custom-->
 
-                    <div class="panel-group col-lg-3" id="tests-list">
+                    <div class="col-lg-3" id="tests-list">
                         <ul id="tests-list-group" class="list-group">
                         </ul>
                     </div>
-                    <!--tests-list-->
-
-                    <div class="panel-group col-lg-9" id="test-live-charts">
-                        <div class="panel panel-default">
-                            <div id="live-chart-container">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="panel-group col-lg-9" id="test-result">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">
-                                    Test Results
-                                </h4>
-                            </div>
-                            <div class="panel-body">
-                                <div id="bar-chart-wrapper">
-                                    <canvas id="bar-chart"></canvas>
-                                </div>
-                                <!--bar-chart-wrapper-->
-                                <div id="line-chart-wrapper">
-                                    <h4>CPU</h4>
-                                    <canvas id="line-chart-cpu"></canvas>
-                                    <h4>RAM</h4>
-                                    <canvas id="line-chart-ram"></canvas>
-                                    <h4>Disk</h4>
-                                    <canvas id="line-chart-disk"></canvas>
-                                    <h4>Network</h4>
-                                    <canvas id="line-chart-net"></canvas>
-                                </div>
-                                <!--line-chart-wrapper-->
-                                <div id="snapshots-wrapper">
-                                    <h4>Snapshots</h4>
-                                </div>
-                                <!--snapshots-wrapper-->
-                                <div id="save-wrapper">
-                                    <h4>Save</h4>
-                                    <button id="xlsx-save" class="btn btn-default" onclick="saveAs('XLXS');">Everything as XLSX</button>
-                                    <button id="csv-save" class="btn btn-default" onclick="saveAs('CSV');">Data as CSV</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!--test-result-->
-
                 </div>
 
-            </div>
-            <!-- /.col-xs-12 main -->
+                <div class="row" id="test-live-charts">
+                    <div id="live-chart-container">
+                    </div>
+                </div>
+
+                <div class="row" id="test-results">
+                    <h3><i style="margin-right:20px" class="fa fa-bar-chart-o" aria-hidden="true"></i>Test Results </h3>
+
+                    <div id="bar-chart-wrapper">
+                        <h4 id="test-steps-header">Test Steps</h4>
+                        <canvas id="bar-chart" class="perf-test-chart"></canvas>
+                        <div id="steps-list" class="perf-test-chart"></div>
+                    </div>
+
+                    <div id="line-chart-wrapper">
+                        <h4>CPU Profiling</h4>
+                        <canvas id="line-chart-cpu" class="perf-test-chart"></canvas>
+                        <div id="cpu-chart-info"></div>
+                        <h4>RAM Profiling</h4>
+                        <canvas id="line-chart-ram" class="perf-test-chart"></canvas>
+                        <div id="ram-chart-info"></div>
+                        <h4>Disk Profiling</h4>
+                        <canvas id="line-chart-disk" class="perf-test-chart"></canvas>
+                        <div id="disk-chart-info"></div>
+                        <h4>Network Profiling</h4>
+                        <canvas id="line-chart-net" class="perf-test-chart"></canvas>
+                        <div id="net-chart-info"></div>
+                    </div>
+
+                    <div id="snapshots-wrapper" class="chart-wrapper">
+                        <h4>Snapshots</h4>
+                    </div>
+
+                    <div id="save-wrapper" class="chart-wrapper">
+                        <h3><i style="margin-right:20px" class="fa fa-floppy-o" aria-hidden="true"></i>Save Test Results
+                        </h3>
+                        <button id="xlsx-save" class="btn btn-default" onclick="saveAs('XLXS');">EVERYTHING AS XLSX
+                        </button>
+                        <button id="csv-save" class="btn btn-default" onclick="saveAs('CSV');">DATA AS CSV</button>
+                    </div>
+
+                    <div id="idle-area" class="col-xs-12 col-sm-9" style="display:none;">
+                        <h2>No machine is currently selected</h2>
+
+                        <h3>Choose a machine shown in the list on the left side.</h3>
+                    </div>
+                </div>
+                </div>
+            <!--test-result-->
+
         </div>
         <!--/.row-->
 

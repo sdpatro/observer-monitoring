@@ -582,7 +582,7 @@ class SimHandler(RequestHandler):
                 buffer = StringIO.StringIO()
                 try:
                     sys.stdout = buffer
-                    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
+                    driver = ObserverDriver(webdriver.Firefox(), test_name, machine_name)
                     exec test_code
                     sys.stdout = sys.__stdout__
                     driver.close_driver()

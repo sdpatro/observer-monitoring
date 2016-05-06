@@ -4,7 +4,48 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
   });
   fetchTestsList();
   _currentTestName = "Custom Test";
+
+  _editor = CodeMirror.fromTextArea(document.getElementById("code-input"), {
+    lineNumbers: true,
+    mode: "python",
+    theme: 'base16-dark'
+  });
+
+    isTestResultsVisibile(false);
+    isLiveChartsVisibile(false);
 });
+
+cpuColors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
+ramColor = "#99a367";
+storageColor = "#3ff4cb";
+netColor = ["#991300","#262835"];
+
+function isTestResultsVisibile(status){
+    if(status){
+        $("#test-results").css("display","");
+    }
+    else{
+        $("#test-results").css("display","none");
+    }
+}
+
+function isLiveChartsVisibile(status){
+    if(status){
+        $("#test-live-charts").css("display","");
+    }
+    else{
+        $("#test-live-charts").css("display","none");
+    }
+}
+
+function isSnapshotsWrapperVisibile(status){
+    if(status){
+        $("#snapshots-wrapper").css("display","");
+    }
+    else{
+        $("#snapshots-wrapper").css("display","none");
+    }
+}
 
 window.onload = function(){
     $("#test_status_1").css("display","none");
@@ -31,15 +72,31 @@ function fetchTestsList(){
         'data' : dataJson
     });
 }
+
 function attachTestsList(tests){
+    $("#tests-list-group").empty();
     for(var i=0 ; i<tests.length ; i++){
-        $("#tests-list-group").append("<li class=\"list-group-item\" onclick=\"loadTest(this)\">"+tests[i]['name']+"</li>");
+        $("#tests-list-group").append("<li class=\"list-group-item test-list-item\" onclick=\"loadTest(this)\">"+tests[i]['name']+"</li>");
+    }
+    makeTestListItemActive();
+}
+
+function makeTestListItemActive(){
+    var testsList = ($("#tests-list-group").children());
+    for(var i=0 ; i<testsList.length ; i++){
+        if($(testsList[i]).text()==_currentTestName){
+            $(testsList[i]).addClass("active");
+        }
+        else{
+            $(testsList[i]).removeClass("active");
+        }
     }
 }
+
 function loadTest(e){
     _currentTestName = $(e).text();
     $('#test-name-header').text(_currentTestName);
-
+    makeTestListItemActive();
     dataJson = {'action':'FETCH_TEST','machine':document.cookie,'test_name':_currentTestName};
     $.ajax({
         'type' : 'POST',
@@ -47,7 +104,8 @@ function loadTest(e){
         'dataType' : 'json',
         'success' : function(response){
                         test = JSON.parse(response.response_data);
-                        $("#code-input").val(test["script"]);
+                        console.log(test["script"]);
+                        _editor.getDoc().setValue(test["script"]);
                     },
         'failure' : function(response){
                         console.log(response);
@@ -55,40 +113,18 @@ function loadTest(e){
         'data' : dataJson
     });
 }
-function runFirefox(test_id){
-
-    runTest(test_id,'FIREFOX');
-}
-function runPhantom(test_id){
-
-    runTest(test_id,'PHANTOMJS');
-}
-function changeTestStatus(test_id,status,test_output){
-    id = test_id.substring((test_id).length-1);
-    if(status=='RUNNING'){
-        $("#test_status_"+id).css('display','');
-        $("#test_status_"+id).text("Running tests, please wait....");
-        $("#test_progress_"+id).css('display','');
-        $("#test_output_"+id).css('display','none');
-    }
-    else if(status=='DONE'){
-        $("#test_status_"+id).text("Tests done.");
-        $("#test_progress_"+id).css('display','none');
-        $("#test_output_"+id).css('display','');
-        for(i=0 ; i<test_output.length ; i++){
-            $("#test_output_"+id).append("<li>"+test_output[i]+"</li>")
-        }
-    }
-}
 
 function runCustomTest(){
     runLiveMonitoring();
-    dataJson = {'action':'RUN_TEST','testName':'customTest','testCode':$("#code-input").val(),'machineName':document.cookie};
+    isLiveChartsVisibile(true);
+    dataJson = {'action':'RUN_TEST','testName':'customTest','testCode':_editor.getDoc().getValue(),'machineName':document.cookie};
     $.ajax({
         'type' : 'POST',
         'url' : _simEndPoint,
         'dataType' : 'json',
         'success' : function(response){
+                        isLiveChartsVisibile(false);
+                        isTestResultsVisibile(true);
                         attachImages(response.output);
                         attachBarChartData(response.output);
                     },
@@ -100,9 +136,13 @@ function runCustomTest(){
 }
 
 function attachImages(output){
+    isSnapshotsWrapperVisibile(false);
     var testSnaps = JSON.parse(output)["snaps"];
-    for(var i=0 ; i<testSnaps.length ; i++){
-        $("#snapshots-wrapper").append("<img id=\""+testSnaps[i]['snap_name']+"\" src=\"data:image/jpg;base64,"+testSnaps[i]['snap_content']+"\" />");
+    if(testSnaps.length > 0){
+        isSnapshotsWrapperVisibile(true);
+        for(var i=0 ; i<testSnaps.length ; i++){
+            $("#snapshots-wrapper").append("<img id=\""+testSnaps[i]['snap_name']+"\" src=\"data:image/jpg;base64,"+testSnaps[i]['snap_content']+"\" />");
+        }
     }
 }
 
@@ -114,14 +154,33 @@ function attachBarChartData(output){
         if(testOutput["steps"][i]["record"] == true)
             steps.push(testOutput["steps"][i]);
     }
+
+    $("#line-chart-wrapper").empty();
+    $("#line-chart-wrapper").append("<h4>CPU Profiling</h4>\n"+
+                        "<canvas id=\"line-chart-cpu\"  class=\"perf-test-chart\"></canvas>\n"+
+                        "<div id=\"cpu-chart-info\"></div>\n"+
+                        "<h4>RAM Profiling</h4>\n"+
+                        "<canvas id=\"line-chart-ram\"  class=\"perf-test-chart\"></canvas>\n"+
+                        "<div id=\"ram-chart-info\"></div>\n"+
+                        "<h4>Disk Profiling</h4>\n"+
+                        "<canvas id=\"line-chart-disk\"  class=\"perf-test-chart\"></canvas>\n"+
+                        "<div id=\"disk-chart-info\"></div>\n"+
+                        "<h4>Network Profiling</h4>\n"+
+                        "<canvas id=\"line-chart-net\" class=\"perf-test-chart\"></canvas>\n"+
+                        "<div id=\"net-chart-info\"></div>\n");
+
     loadTestOutputCharts(steps);
     closeLiveMonitoring();
 }
 function saveTest(){
     testName = $("#test-name-input").val();
-    sourceCode = $("#code-input").val()
-    if(testName=="" || sourceCode==""){
+    sourceCode = _editor.getDoc().getValue();
+    if(testName==""){
         alert("Test name cannot be empty.");
+        return;
+    }
+    if(sourceCode==""){
+        alert("Test script cannot be empty.");
         return;
     }
     dataJson = {'action':'SAVE_TEST','testName':testName,'testCode':sourceCode,'machine':document.cookie};
@@ -130,23 +189,29 @@ function saveTest(){
         'url' : _apiEndPoint,
         'dataType' : 'json',
         'success' : function(response){
-                        alert(response.status + " " + response.output);
+                        alert("Successfully saved.");
+                        fetchTestsList();
                     },
         'failure' : function(response){
                         console.log(response);
                     },
         'data' : dataJson
     });
+
+
 }
 
 function loadTestOutputCharts(steps){
-    setChartDimensions("#bar-chart",200,500);
-    setChartDimensions("#line-chart-cpu",200,500);
-    setChartDimensions("#line-chart-ram",200,500);
-    setChartDimensions("#line-chart-disk",200,500);
-    setChartDimensions("#line-chart-net",200,500);
+
+    _chartHeight = 200;
+    _chartWidth = 0.8*$("#line-chart-wrapper").width();
+    setChartDimensions("#line-chart-cpu",_chartHeight,_chartWidth);
+    setChartDimensions("#line-chart-ram",_chartHeight,_chartWidth);
+    setChartDimensions("#line-chart-disk",_chartHeight,_chartWidth);
+    setChartDimensions("#line-chart-net",_chartHeight,_chartWidth);
 
     loadBarChart(steps);
+    loadSteps(steps);
     attachLineChartData();
 }
 
@@ -155,6 +220,41 @@ function attachLineChartData(){
     loadLineChart_RAM();
     loadLineChart_Disk();
     loadLineChart_Net();
+    setChartsInfo();
+}
+
+function setChartsInfo(){
+    setCpuChartInfo();
+    setNetChartInfo();
+    setDiskChartInfo();
+    setRamChartInfo();
+}
+
+function setCpuChartInfo(){
+    var cpuChartHtml = "";
+    $("#cpu-chart-info").html("");
+    for(var i=0 ; i<cpuCoreCount ; i++){
+        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+"</div></div>\n";
+    }
+    $("#cpu-chart-info").html(cpuChartHtml);
+}
+
+function setRamChartInfo(){
+    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM</div></div>\n")
+}
+
+function setNetChartInfo(){
+    netChartInfoHtml = "";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent</div></div>\n";
+    $("#net-chart-info").html(netChartInfoHtml);
+}
+
+function setDiskChartInfo(){
+    var diskChartInfoHtml = "";
+    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#3ff4cb\"></div><div class=\"meter-info\">Read Rate</div></div>\n";
+    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#f43f68\"></div><div class=\"meter-info\">Write Rate</div></div>\n";
+    $("#disk-chart-info").html(diskChartInfoHtml);
 }
 
 function setChartDimensions(chartCanvas, height, width){
@@ -162,13 +262,25 @@ function setChartDimensions(chartCanvas, height, width){
     $(chartCanvas).attr("width",width);
 }
 
+function loadSteps(steps){
+    $("#steps-list").empty();
+    for(var i=0 ; i<steps.length ; i++){
+        if(steps[i].action=="go_to")
+            var action = "Navigate to";
+        $("#steps-list").append($("<div class=\"steps-list-item\"><b>STEP "+(i+1)+":</b> "+action+" <b>"+steps[i].target+"</b></div>"));
+    }
+}
+
 function loadBarChart(steps){
+    $("#bar-chart").remove();
+    $("<canvas id=\"bar-chart\" class=\"perf-test-chart\"></canvas>").insertAfter("#test-steps-header");
     labels = [];
     steps_duration = [];
+    setChartDimensions("#bar-chart",50+50*steps.length,300);
     for(var i=0 ; i<steps.length ; i++){
         var date1 = new Date(steps[i]["startTime"]);
         var date2 = new Date(steps[i]["endTime"]);
-        labels.push("     test#"+i);
+        labels.push("       STEP "+(i+1));
         steps_duration.push((date2-date1)/1000);
     }
     var data = {
@@ -176,8 +288,8 @@ function loadBarChart(steps){
         datasets: [
             {
                 label: "My First dataset",
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: "rgba(51, 204, 51, 0.5)",
+                strokeColor: "rgba(51, 204, 51, 0.8)",
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: steps_duration.reverse()
@@ -191,8 +303,10 @@ function loadBarChart(steps){
 }
 
 function loadLineChart_CPU(){
+    var colors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
+    var fillStyles = ["rgba(238,97,70,0.2)","rgba(255,213,87,0.2)","rgba(82,144,142,0.2)","rgba(82,144,113,0.2)"];
     var labels = [];
-    var cpuCoreCount = liveDataCache[0]["cpu_count"];
+    cpuCoreCount = liveDataCache[0]["cpu_count"];
     var cpuDataSet = [];
 
     for(var i=0 ; i<cpuCoreCount ; i++){
@@ -209,8 +323,8 @@ function loadLineChart_CPU(){
 
     for(var i=0 ; i<cpuCoreCount ; i++){
         datasets.push({
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: fillStyles[i],
+                strokeColor: colors[i],
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: cpuDataSet[i]
@@ -240,8 +354,8 @@ function loadLineChart_RAM(){
         labels: labels,
         datasets: [
             {
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: 'rgba(153,163,103,0.2)',
+                strokeColor: '#99a367',
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: ramDataSet
@@ -269,15 +383,15 @@ function loadLineChart_Disk(){
         labels: labels,
         datasets: [
             {
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: "rgba(63,244,203,0.2)",
+                strokeColor: "#3ff4cb",
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: diskReadDataSet
             },
             {
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: "rgba(244,63,108,0.2)",
+                strokeColor: "#f43f68",
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: diskWriteDataSet
@@ -306,15 +420,15 @@ function loadLineChart_Net(){
         labels: labels,
         datasets: [
             {
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: "rgba(152,19,0,0.3)",
+                strokeColor: "#991300",
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: netRecvDataSet
             },
             {
-                fillColor: "rgba(220,220,220,0.5)",
-                strokeColor: "rgba(220,220,220,0.8)",
+                fillColor: "rgba(38,40,53,0.3)",
+                strokeColor: "#262835",
                 highlightFill: "rgba(220,220,220,0.75)",
                 highlightStroke: "rgba(220,220,220,1)",
                 data: netSendDataSet
@@ -329,13 +443,13 @@ function loadLineChart_Net(){
 }
 
 function makeLabel(d){
-
     return d["action"]+" "+d["target"]+" "+d["duration"];
 }
 
 function runLiveMonitoring(){
     _isTestRunning = true;
     _isLiveGraphsRunning = false;
+
     liveDataCache = [];
     pollLiveData();
 }
