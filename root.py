@@ -1,7 +1,7 @@
 import calendar
 
 __author__ = 'sdpatro'
-import Image
+from PIL import Image
 import sys
 import StringIO
 from tornado import gen
@@ -296,15 +296,22 @@ def get_excel_column(number):
                  'U', 'V', 'W', 'X', 'Y', 'Z']
     rem = number
     result = ""
-    while rem > 0:
-        result = char_list[(rem % 26) - 1] + result
-        rem = int(rem / 26)
+    while True:
+        if rem>26:
+            result = result + char_list[(rem-(26*int(rem/26)))-1]
+            rem = int(rem/26)
+        else:
+            result = result + char_list[rem-1]
+            break
     return result
 
 
 class ApiHandler(RequestHandler):
     def data_received(self, chunk):
         pass
+
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
 
     def error_respond(self, code, msg):
         self.set_status(code)
@@ -567,7 +574,7 @@ class SimHandler(RequestHandler):
         self.finish()
 
     def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+        self.set_header("Access-Control-Allow-Origin", "*")
 
     def post(self):
         action = self.get_argument("action", None)
@@ -621,7 +628,7 @@ class LiveMonitorHandler(RequestHandler):
         self.finish()
 
     def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+        self.set_header("Access-Control-Allow-Origin", "*")
 
     @gen.coroutine
     def get_live_data(self, client_name):
@@ -749,7 +756,7 @@ class ComputeHandler(RequestHandler):
         self.finish()
 
     def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:9000")
+        self.set_header("Access-Control-Allow-Origin", "*")
 
     @gen.coroutine
     def post(self):

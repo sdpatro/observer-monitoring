@@ -6,6 +6,9 @@ _simEndPoint = "http://"+window.location.hostname+":9001/sim";
 _liveEndPoint = "http://"+window.location.hostname+":9002/live";
 _filesEndPoint = "http://"+window.location.hostname+":9000/files";
 _computeEndPoint = "http://"+window.location.hostname+":9003/compute";
+loc = window.location.pathname;
+_currentPage= loc.substring(loc.lastIndexOf('/')+1,loc.length);
+
 
 function pageInit(){
     remoteMachinesUpdater();
@@ -14,6 +17,19 @@ function pageInit(){
         _common = {"currentMachine":document.cookie};
     }
     $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+document.cookie);
+    setPageActive();
+}
+
+function setPageActive(){
+    if(_currentPage!=null && _currentPage!=""){
+        var navList = $("#sidebar-nav").children();
+        for(var i=0 ; i<navList.length ; i++){
+            if($(navList[i]).attr("id")==_currentPage+"-nav"){
+                $(navList[i]).addClass("active");
+                break;
+            }
+        }
+    }
 }
 
 function remoteMachinesUpdater(){

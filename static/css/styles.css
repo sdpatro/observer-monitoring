@@ -184,8 +184,7 @@ h3{
 }
 
 .perf-test-chart{
-    margin-top: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
 }
 
 #steps-list{
@@ -195,4 +194,43 @@ h3{
     margin: 2px;
     width: 80%;
     margin-bottom: 20px;
+}
+
+#bar-chart-wrapper h4{
+    margin-top: 30px;
+}
+
+#line-chart-wrapper h4{
+    margin-top: 30px;
+}
+
+#snapshots-wrapper h4{
+    margin-top: 30px;
+}
+
+.snap-container{
+    height: 400px;
+    width: 80%;
+    overflow: hidden;
+    border: 1px solid #dedede;
+    margin-top: 10px;
+}
+
+.nav-list-item{
+    color: #dedede;
+    margin-bottom: 5px;
+}
+.nav-list-item:hover{
+    color: #eeeeee;
+    background-color: #dedede;
+    margin-bottom: 5px;
+}
+.nav-list-item.active{
+    border-left: 4px solid #dedede;
+    font-weight: bold;
+    background-color: #333333;
+}
+.fa.nav-list-icon{
+    margin-right: 5px;
+    width: 20px;
 }

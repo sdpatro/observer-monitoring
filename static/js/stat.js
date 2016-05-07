@@ -8,7 +8,7 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     initiateStat();
   }
   else{
-    show-idle(true);
+    showIdle(true);
   }
   _rowWidth = 0.8*$("#cpu-stats").width();
 });

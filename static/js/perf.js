@@ -1,18 +1,24 @@
 
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
-    $('.row-offcanvas').toggleClass('active');
-  });
-  fetchTestsList();
-  _currentTestName = "Custom Test";
+        $('.row-offcanvas').toggleClass('active');
+      });
 
-  _editor = CodeMirror.fromTextArea(document.getElementById("code-input"), {
-    lineNumbers: true,
-    mode: "python",
-    theme: 'base16-dark'
-  });
+    if(document.cookie != ""){
+        fetchTestsList();
+        _currentTestName = "Custom Test";
 
-    isTestResultsVisibile(false);
-    isLiveChartsVisibile(false);
+        _editor = CodeMirror.fromTextArea(document.getElementById("code-input"), {
+            lineNumbers: true,
+            mode: "python",
+            theme: 'base16-dark'
+        });
+
+        isTestResultsVisibile(false);
+        isLiveChartsVisibile(false);
+    }
+    else{
+        showIdle(true);
+    }
 });
 
 cpuColors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
@@ -117,7 +123,7 @@ function loadTest(e){
 function runCustomTest(){
     runLiveMonitoring();
     isLiveChartsVisibile(true);
-    dataJson = {'action':'RUN_TEST','testName':'customTest','testCode':_editor.getDoc().getValue(),'machineName':document.cookie};
+    dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':document.cookie};
     $.ajax({
         'type' : 'POST',
         'url' : _simEndPoint,
@@ -137,13 +143,21 @@ function runCustomTest(){
 
 function attachImages(output){
     isSnapshotsWrapperVisibile(false);
+    _snapWidth = 0.8*$("#snapshots-wrapper").width();
     var testSnaps = JSON.parse(output)["snaps"];
+    $("#snapshots-wrapper").empty();
     if(testSnaps.length > 0){
         isSnapshotsWrapperVisibile(true);
         for(var i=0 ; i<testSnaps.length ; i++){
-            $("#snapshots-wrapper").append("<img id=\""+testSnaps[i]['snap_name']+"\" src=\"data:image/jpg;base64,"+testSnaps[i]['snap_content']+"\" />");
+            $snap = $("<div class=\"snap-container\" onclick=\"expandPhoto(this)\"><img id=\""+testSnaps[i]['snap_name']+"\" src=\"data:image/jpg;base64,"+testSnaps[i]['snap_content']+"\" /></div>");
+            $($snap.children()[0]).attr("width","100%");
+            $("#snapshots-wrapper").append($snap);
         }
     }
+}
+
+function expandPhoto(container){
+    window.open($($(container).children()[0]).attr("src"),"_blank");
 }
 
 function attachBarChartData(output){
@@ -182,6 +196,7 @@ function saveTest(){
     if(sourceCode==""){
         alert("Test script cannot be empty.");
         return;
+
     }
     dataJson = {'action':'SAVE_TEST','testName':testName,'testCode':sourceCode,'machine':document.cookie};
     $.ajax({
@@ -586,9 +601,9 @@ function makeChartSummaryJson(){
         jsonData["live_data"].push(liveDataCache[i]);
     }
 
-    snaps = $("#snapshots-wrapper").children();
-    for(var i=1 ; i<snaps.length ; i++){
-        jsonData["snaps_id"].push($(snaps[i]).attr('id'));
+    snapContainers = $("#snapshots-wrapper").children();
+    for(var i=1 ; i<snapContainers.length ; i++){
+        jsonData["snaps_id"].push($($(snapContainers[i]).children()[0]).attr("id"));
     }
 
     wrapperJson = {'jsonData':JSON.stringify(jsonData),'action':'SAVE_TEST_RESULT_AS','test_name':_currentTestName,'file_type':'XLSX'};
