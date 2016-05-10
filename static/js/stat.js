@@ -74,24 +74,24 @@ function setCpuChartInfo(){
     var cpuChartHtml = "";
     $("#cpu-chart-info").html("");
     for(var i=0 ; i<cpuCoreCount ; i++){
-        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+"</div></div>\n";
+        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+" (%)</div></div>\n";
     }
     $("#cpu-chart-info").html(cpuChartHtml);
 }
 
 function setRamChartInfo(){
-    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM</div></div>\n")
+    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM (%)</div></div>\n")
 }
 
 function setNetChartInfo(){
     netChartInfoHtml = "";
-    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd</div></div>\n";
-    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd (MB)</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent (MB)</div></div>\n";
     $("#net-chart-info").html(netChartInfoHtml);
 }
 
 function setStorageChartInfo(){
-    $("#storage-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+storageColor+"\"></div><div class=\"meter-info\">Storage Used</div></div>\n");
+    $("#storage-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+storageColor+"\"></div><div class=\"meter-info\">Storage Used (GB)</div></div>\n");
 }
 
 function setChartsInfo(){

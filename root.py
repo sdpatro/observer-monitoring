@@ -30,6 +30,8 @@ import uimodules
 DB_IP = '127.0.0.1'
 DB_PORT = 27017
 
+ADMIN_PASSWORD = "letmein"
+
 
 # Get MongoDB client.
 def get_db(ip, port):
@@ -108,7 +110,7 @@ class TCPListener(TCPServer):
 
 def update_machine(json_data, machine_ip):
     machine_name = json_data["name"]
-    machine = db_connection["machines"].find_one({'name': machine_name, 'ip': machine_ip})
+    machine = db_connection["machines"].find_one({'name': machine_name})
     if machine is None:
         db_connection["machines"].insert(
                 {'name': machine_name, 'ip': machine_ip, 'last_online': str(datetime.datetime.now().isoformat()),
@@ -297,11 +299,11 @@ def get_excel_column(number):
     rem = number
     result = ""
     while True:
-        if rem>26:
-            result = result + char_list[(rem-(26*int(rem/26)))-1]
-            rem = int(rem/26)
+        if rem > 26:
+            result = result + char_list[(rem - (26 * int(rem / 26))) - 1]
+            rem = int(rem / 26)
         else:
-            result = result + char_list[rem-1]
+            result = result + char_list[rem - 1]
             break
     return result
 
@@ -407,6 +409,35 @@ class ApiHandler(RequestHandler):
                     self.finish(dict(response_data=json.dumps({'script': test['script']})))
                 except Exception as e:
                     self.error_respond(500, "Something went wrong: " + str(e))
+
+            elif action == "LOGIN_ADMIN":
+                password = self.get_argument("password")
+                if password is None:
+                    self.error_respond(400, "Arguments missing")
+                    return
+
+                try:
+                    if password == ADMIN_PASSWORD:
+                        self.finish(dict(auth="True"))
+                    else:
+                        self.finish(dict(auth="False"))
+                except Exception as e:
+                    self.error_respond(500, "Something went wrong: " + str(e))
+
+            elif action == "DELETE_REMOTE_MACHINE":
+                machine_name = self.get_argument("machine_id")
+                if machine_name is None:
+                    self.error_respond(400, "Arguments missing")
+                    return
+
+                try:
+                    db_connection["[" + machine_name + "]-live"].drop()
+                    db_connection["[" + machine_name + "]-stat"].drop()
+                    db_connection["machines"].remove({"name": machine_name})
+                    self.finish(dict(status="True"))
+                except Exception as e:
+                    self.error_respond(500, "Something went wrong: " + str(e))
+
 
             elif action == "SAVE_TEST_RESULT_AS":
                 json_data = json.loads(self.get_argument("jsonData"))
@@ -537,6 +568,14 @@ class CostHandler(RequestHandler):
         self.render("templates/cost.html")
 
 
+class AdminHandler(RequestHandler):
+    def post(self):
+        pass
+
+    def get(self):
+        self.render("templates/admin.html")
+
+
 def start_dash_server(port):
     settings = {
         "ui_modules": uimodules
@@ -547,6 +586,7 @@ def start_dash_server(port):
                        (r"/perf", PerfHandler),
                        (r"/cost", CostHandler),
                        (r"/test", TestHandler),
+                       (r"/admin", AdminHandler),
                        (r"/files/(.*)", tornado.web.StaticFileHandler,
                         {"path": "../observer-monitoring/files_buffer/"}),
                        (r"/fonts/(.*)", tornado.web.StaticFileHandler,

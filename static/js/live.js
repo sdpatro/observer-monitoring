@@ -16,7 +16,6 @@ function initiateLive(){
     runGraph_RAM();
     runGraph_disk();
     runGraph_net();
-    update_uptime();
 }
 
 liveDataCache = [];
@@ -62,9 +61,6 @@ function update_uptime(){
     dataUnit = liveDataCache[(liveDataCache).length-1];
     $("#sys-uptime").text(convert_to_timedelta(dataUnit["uptime"]));
    }
-   setTimeout(function(){
-    update_uptime();
-   },1000);
 }
 
 function runGraph_CPU(){
@@ -193,6 +189,7 @@ function pollLiveData(){
                         liveDataCache = liveDataCache.splice(0,1);
                     }
                     setTimeout(function(){pollLiveData()},500);
+                    update_uptime();
                    },
         'error':function(response){
                     console.log(response);
