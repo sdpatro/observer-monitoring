@@ -55,7 +55,7 @@ function loadRemoteMachines(remoteMachines){
         lastOnlineStamp = new Date(remoteMachines[i]["last_online"]*1000)
         currentStamp = new Date();
         timeDiff = currentStamp-lastOnlineStamp;
-        var status = "online";
+        status = "online";
 
         if($("#sys-offline-msg")!=null){
             $("#sys-offline-msg").css("display","none")
@@ -63,7 +63,7 @@ function loadRemoteMachines(remoteMachines){
 
         if(timeDiff/1000 > 10){
             status = "offline";
-            if($("#sys-offline-msg")!=null){
+            if($("#sys-offline-msg")!=null && remoteMachines[i].name==_common["currentMachine"]){
                 $("#sys-offline-msg").css("display","")
             }
         }
