@@ -343,7 +343,6 @@ function generateData_CPU(record){
         cpuData[i].push([Date.parse(record["date"]),record['cpu'][i]]);
     }
 }
-
 function generateData_RAM(record){
     ramData.push([Date.parse(record["date"]),record['ram']]);
 }

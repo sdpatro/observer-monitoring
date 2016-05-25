@@ -167,7 +167,7 @@ h3{
     margin-right: 10px;
 }
 
-#test-name-input{
+#days-duration-input, #test-name-input{
     border-top-left-radius: 0px;
     border-bottom-left-radius: 0px;
     border-top-right-radius: 0px;
@@ -299,4 +299,30 @@ h3{
 
 .dropdown-menu{
     border-radius: 0px;
+}
+
+.dropdown-list-item{
+    padding: 10px;
+    color: #333333;
+}
+
+.dropdown-list-item:hover{
+    cursor: default;
+    opacity: 0.8;
+}
+
+#cloud-provider-dropdown{
+    margin-bottom:10px;
+}
+
+#current-instance-type-details{
+    padding: 10px;
+}
+
+#days-duration-input{
+    width: 100px;
+}
+
+#set-duration-btn{
+    margin-left: 20px;
 }

@@ -28,7 +28,7 @@ function fetchInstanceTypes(providerName){
                     _instancePricing = JSON.parse(response.response_data);
                     $("#instance-type-dropdown-menu").empty();
                     for(var i=0 ; i<(_instancePricing['instances']).length ; i++){
-                        $("#instance-type-dropdown-menu").append("<li onclick=\"setCurrentInstanceType(this)\">"+_instancePricing['instances'][i]['name'] +"<li>")
+                        $("#instance-type-dropdown-menu").append("<li class=\"dropdown-list-item\" onclick=\"setCurrentInstanceType(this)\">"+_instancePricing['instances'][i]['name'] +"<li>")
                     }
                   },
         failure: function(response){
@@ -64,7 +64,7 @@ function fetchUtilization(machineName){
 
 function setCurrentUtilization(duration,count){
     _usagePercentage = Math.round((count/duration)*100,2);
-    $("#usage-perc").text(count.toString()+"/"+duration.toString()+" : "+_usagePercentage+"%");
+    $("#usage-perc").html("<b>"+count.toString()+"</b> (minutes) out of <b>"+duration.toString()+"</b> (minutes): "+_usagePercentage+"%");
 }
 
 function setEstimationDuration(){
@@ -82,7 +82,6 @@ function fetchExtrapolatedCharts(daysDuration){
         'success':function(response){
                     if(response['status']=='success')
                     {
-                        console.log("dl_bandwidth: "+response['misc_data']['dl_bandwidth']);
                         emptyRecords();
                         statData = response['stat_data'];
                         statData.forEach(generateData_CPU);
@@ -313,7 +312,7 @@ function getCurrentInstanceTypeIndex(instanceTypeName){
 
 function setCurrentInstanceType(el){
     $("#current-instance-type").text(el.innerText);
-    $("#current-instance-type-details").text(getInstanceDetails(el.innerText));
+    $("#current-instance-type-details").html(getInstanceDetails(el.innerText));
     _currentInstanceType = el.innerText;
     setCpuOptimization();
     setRamOptimization();
@@ -339,9 +338,9 @@ function getInstanceDetails(instanceTypeName){
     for(var i=0; i<_instancePricing['instances'].length ; i++){
         if(_instancePricing['instances'][i]['name']==instanceTypeName){
             instanceType = _instancePricing['instances'][i];
-            var returnString =  "vCpu: "+instanceType['vCpu'] + "\n";
-            returnString += "Hourly Cost: "+instanceType['hourly-cost']+"$\n";
-            returnString += "Memory: "+instanceType['memory']+"GB\n";
+            var returnString =  "vCpu: <b>"+instanceType['vCpu'] + "</b> <br>";
+            returnString += "Hourly Cost: <b>"+instanceType['hourly-cost']+"$</b> <br>";
+            returnString += "Memory: <b>"+instanceType['memory']+"GB</b> <br>";
             return returnString;
         }
     }

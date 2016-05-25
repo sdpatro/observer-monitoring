@@ -23,16 +23,24 @@
             <div id="main-area" class="col-xs-12 col-sm-9" data-spy="scroll" data-target="#sidebar-nav">
                 <h1 id="section1" class="row">Cost Estimation</h1>
                 <div class="row">
+                    <div id="cloud-provider-dropdown" class="dropdown">
+                        <button class="btn btn-default dropdown-toggle" type="button" id="cloud-provider-list"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            Choose Cloud Provider
+                            <span class="caret"></span>
+                        </button>
+                        <ul id="cloud-provider-dropdown-menu" class="dropdown-menu" aria-labelledby="instance-type-list">
+                        </ul>
+                    </div>
                     <div class="dropdown">
                         <button class="btn btn-default dropdown-toggle" type="button" id="instance-type-list"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                            Choose Instance Type
+                            <div id="current-instance-type">Choose Instance Type</div>
                             <span class="caret"></span>
                         </button>
                         <ul id="instance-type-dropdown-menu" class="dropdown-menu" aria-labelledby="instance-type-list">
                         </ul>
                     </div>
-                    <div id="current-instance-type"></div>
                     <div id="current-instance-type-details"></div>
                 </div>
                 <div class="row">
@@ -40,14 +48,12 @@
                     <div><div id="usage-perc"></div></div>
                 </div>
                 <div class="row">
-                    <div>Estimation Duration (in days): </div>
+                    <div style="margin-bottom: 10px;">Estimation Duration (in days): </div>
                     <div class="input-group">
                         <input id="days-duration-input" type="text" class="form-control"
-                               placeholder="Days Duration">
-                      <span class="input-group-btn">
-                        <button class="btn btn-default" type="button" onclick="setEstimationDuration();">Set Duration
+                               placeholder="Days">
+                        <button id="set-duration-btn" class="btn btn-default" type="button" onclick="setEstimationDuration();">Set Duration
                         </button>
-                      </span>
                     </div>
                     <h2>CPU demand curve</h2>
                     <div id="cpu_demand_curve"></div>
@@ -61,6 +67,31 @@
                     <div id="net_demand_curve"></div>
                     <div id="net_demand_stats"></div>
                     <div id="net_optimizations"></div>
+
+                    <div id="cpu-stats" class="row">
+                        <h3><i style="margin-right:20px" class="fa fa-building" aria-hidden="true"></i>CPU Usage Stats</h3>
+                        <div id='cpu_chart'></div>
+                        <div id='cpu-chart-info'></div>
+                    </div>
+                    <div class="row">
+                        <h3><i style="margin-right:20px" class="fa fa-barcode" aria-hidden="true"></i>RAM Usage Stats</h3>
+                        <div id='ram_chart'></div>
+                        <div id='ram-chart-info'></div>
+                    </div>
+                    <div class="row">
+                        <h3><i style="margin-right:20px" class="fa fa-wifi" aria-hidden="true"></i>Network Usage Stats</h3>
+                        <div id='net_chart'></div>
+                        <div id='net-chart-info'></div>
+                    </div>
+                    <div class="row">
+                        <h3><i style="margin-right:20px" class="fa fa-hdd-o" aria-hidden="true"></i>Storage Usage Stats</h3>
+                        <div id='storage_chart'></div>
+                        <div id='storage-chart-info'></div>
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-default" onclick="toggleDisjointGraphs();">Toggle Disjoint Areas</button>
+                    </div>
+
                 </div>
                 <div class="row">
                     <h2>Total Cost</h2>
