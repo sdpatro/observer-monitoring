@@ -1,4 +1,5 @@
 import calendar
+import threading
 
 __author__ = 'sdpatro'
 from PIL import Image
@@ -25,6 +26,7 @@ from tornado.httpserver import HTTPServer
 from selenium import webdriver
 
 import uimodules
+import Queue
 
 # The MongoDB server specifications, recommended to be deployed on the same drive as root server for faster access.
 DB_IP = '127.0.0.1'
@@ -204,62 +206,87 @@ class ObserverDriver:
     def set_web_driver(self, driver):
         self.web_driver = driver
 
-    def snap(self, height=None, width=None):
+    def set_dimensions(self, height, width):
+        self.web_driver.set_window_size(height, width)
+
+    def snap(self, height=None, width=None, ):
         snap_date = str(datetime.datetime.now().isoformat())
         self.web_driver.set_window_position(0, 0)
         if height is not None and width is not None:
             self.web_driver.set_window_size(height, width)
         snap_name = "files_buffer/" + self.machine_name + "_" + self.test_name + "_" + snap_date + ".jpg"
-        self.web_driver.save_screenshot(
-                snap_name)
-
+        self.web_driver.save_screenshot(snap_name)
         with open(snap_name,
                   "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read())
             self.snaps.append({'snap_name': snap_name, 'snap_content': encoded_string})
-            print encoded_string
 
-    def go_to(self, url, record=False):
+    def go_to(self, url, record=False, wait_till_loaded=None):
         start_time = datetime.datetime.now()
         self.web_driver.get(url)
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
+        if wait_till_loaded is not None:
+            while not self.web_driver.execute_script('return ' + wait_till_loaded + ';'):
+                pass
         end_time = datetime.datetime.now()
         self.steps.append(
                 dict(action="go_to", target=url, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
                      record=record))
 
-    def button_click(self, button_id, record=False):
+    def button_click_id(self, button_id, record=False, wait_till_loaded=None):
         start_time = datetime.datetime.now()
-        self.web_driver.findElement(str(button_id)).click()
+        self.web_driver.find_element_by_id(str(button_id)).click()
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
+        if wait_till_loaded is not None:
+            while not self.web_driver.execute_script('return ' + wait_till_loaded + ';'):
+                pass
         end_time = datetime.datetime.now()
         self.steps.append(
                 dict(action="button_click", target=button_id, startTime=start_time.isoformat(),
                      endTime=end_time.isoformat(),
                      record=record))
 
-    def submit_form(self, form_element_id, record=False):
+    def button_click_class(self, class_name, btn_index, record=False, wait_till_loaded=None):
         start_time = datetime.datetime.now()
-        el = self.web_driver.findElement(form_element_id)
+        btn_list = self.web_driver.find_elements_by_class_name(class_name)
+        btn = btn_list[btn_index]
+        btn.click()
+        while self.web_driver.execute_script('return document.readyState;') != 'complete':
+            pass
+        if wait_till_loaded is not None:
+            while not self.web_driver.execute_script('return ' + wait_till_loaded + ';'):
+                pass
+        end_time = datetime.datetime.now()
+        self.steps.append(
+                dict(action="button_click", target=class_name + " " + str(btn_index), startTime=start_time.isoformat(),
+                     endTime=end_time.isoformat(),
+                     record=record))
+
+    def submit_form(self, form_element_id, record=False, wait_till_loaded=None):
+        start_time = datetime.datetime.now()
+        el = self.web_driver.find_element_by_id(form_element_id)
         el.submit()
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
+        if wait_till_loaded is not None:
+            while self.web_driver.execute_script('return ' + wait_till_loaded + ';') != 'true':
+                pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="formSubmit", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                dict(action="form_submit", target=form_element_id, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
                      record=record))
 
     def fill_form_element(self, form_element_id, input_text, record=False):
         start_time = datetime.datetime.now()
-        el = self.web_driver.findElement(form_element_id)
+        el = self.web_driver.find_element_by_id(form_element_id)
         el.send_keys(input_text)
         while self.web_driver.execute_script('return document.readyState;') != 'complete':
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="fill_form_element", startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                dict(action="fill_form_element", target=form_element_id, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
                      record=record))
 
     def close_driver(self):
@@ -355,7 +382,16 @@ class ApiHandler(RequestHandler):
                 for record in stat_data_query:
                     record['_id'] = str(record['_id'])
                     stat_data.append(record)
+
+                if len(stat_data) > 1000:
+                    gradient = int(len(stat_data) / 1000)
+                else:
+                    gradient = 1
+
+                print "Gradient: " + str(gradient)
+                stat_data = condense_data_estimation(stat_data, gradient)
                 self.finish(dict(stat_data=stat_data))
+
             elif action == "GET_REMOTE_MACHINES":
                 remote_machines_cursor = db_connection["machines"].find()
                 remote_machines_list = []
@@ -600,6 +636,23 @@ def start_dash_server(port):
 
 
 ##############################################################
+test_output = []
+output_queue = Queue.Queue()
+test_error_queue = Queue.Queue()
+
+def runTests(test_code, test_name, machine_name, output_queue, test_error_queue):
+
+    driver = ObserverDriver(webdriver.Chrome(), test_name, machine_name)
+    try:
+        exec test_code
+    except Exception as e:
+        test_error_msg = str(e)
+        test_error_queue.put(test_error_msg)
+
+    driver.close_driver()
+    test_output = {'steps': driver.get_steps(), 'snaps': driver.get_snaps()}
+    output_queue.put(test_output)
+
 
 class SimHandler(RequestHandler):
     def data_received(self, chunk):
@@ -623,21 +676,44 @@ class SimHandler(RequestHandler):
                 test_name = self.get_argument("testName", None)
                 machine_name = self.get_argument("machineName", None)
                 test_code = self.get_argument("testCode", None)
+                instances_count = int(self.get_argument("instancesCount", None))
                 status = "success"
                 if test_code is None:
                     self.finish((dict(status="failure", output="Missing argument in request")))
-                buffer = StringIO.StringIO()
+                queue_list = []
+                test_error_msg = None
+                test_error_queue = Queue.Queue()
                 try:
-                    sys.stdout = buffer
-                    driver = ObserverDriver(webdriver.Firefox(), test_name, machine_name)
-                    exec test_code
-                    sys.stdout = sys.__stdout__
-                    driver.close_driver()
-                    output = json.dumps({'steps': driver.get_steps(), 'snaps': driver.get_snaps()})
+                    thread_instances = []
+                    for i in range(0, instances_count):
+                        queue_list.append(Queue.Queue())
+                        thread_instances.append(
+                                threading.Thread(target=runTests,
+                                                 args=(
+                                                 test_code, test_name, machine_name, queue_list[i], test_error_queue)))
+                        thread_instances[i].start()
+                    for i in range(0, instances_count):
+                        thread_instances[i].join()
                 except Exception as e:
-                    output = e.message + buffer.getvalue()
                     status = "failure"
-                self.finish((dict(status=status, output=output)))
+
+                while not test_error_queue.empty():
+                    test_error_msg = test_error_queue.get()
+
+                if test_error_msg:
+                    status = "failure"
+
+                if status == "success":
+                    test_output = []
+                    for i in range(0, instances_count):
+                        test_output_unit_list = []
+                        while not queue_list[i].empty():
+                            test_output_unit_list.append(queue_list[i].get())
+                        test_output.append(test_output_unit_list)
+                    self.finish((dict(status=status, output=json.dumps(test_output))))
+
+                elif status == "failure":
+                    self.finish((dict(status=status, msg=test_error_msg)))
             pass
 
         else:

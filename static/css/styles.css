@@ -164,7 +164,7 @@ h3{
 }
 
 #run-test-btn{
-    margin-right: 20px;
+    margin-right: 10px;
 }
 
 #test-name-input{
@@ -173,7 +173,7 @@ h3{
     border-top-right-radius: 0px;
     border-bottom-right-radius: 0px;
     display: inline-block;
-    width: 50%;
+    width: 40%;
     border: 2px solid #dedede;
     background: #444444;
     color: #dedede;
@@ -215,7 +215,7 @@ h3{
 }
 
 .snap-container{
-    height: 400px;
+    height: 300px;
     width: 80%;
     overflow: hidden;
     border: 1px solid #dedede;
@@ -262,4 +262,41 @@ h3{
 }
 #admin-login{
     padding: 10px;
+}
+
+#sys-offline-msg{
+    color: #cc0000;
+    font-size: 1.2em;
+    margin-top: 5px;
+}
+
+#instances-count-area{
+    margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 20px;
+    display: inline-block;
+    -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently
+                                  not supported by any browser */
+}
+
+#instances-count{
+    display: inline-block;
+
+}
+
+.instances-count-icon:hover{
+    opacity: 0.8;
+}
+
+#snapshots-header{
+    margin-top: 20px;
+}
+
+.dropdown-menu{
+    border-radius: 0px;
 }

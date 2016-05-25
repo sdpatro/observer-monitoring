@@ -120,19 +120,34 @@ function loadTest(e){
     });
 }
 
+function increaseInstanceCount(){
+    var instance_count = $("#instances-count").text();
+    instance_count = parseInt(instance_count);
+    instance_count = ((instance_count)%10)+1;
+    $("#instances-count").text(instance_count);
+}
+
 function runCustomTest(){
     runLiveMonitoring();
     isLiveChartsVisibile(true);
-    dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':document.cookie};
+    dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':document.cookie,'instancesCount':parseInt($("#instances-count").text())};
     $.ajax({
         'type' : 'POST',
         'url' : _simEndPoint,
         'dataType' : 'json',
         'success' : function(response){
-                        isLiveChartsVisibile(false);
-                        isTestResultsVisibile(true);
-                        attachImages(response.output);
-                        attachBarChartData(response.output);
+                        if(response.status == "success")
+                        {
+                            _testOutputJson = JSON.parse(response.output);
+                            isLiveChartsVisibile(false);
+                            isTestResultsVisibile(true);
+                            attachImages(_testOutputJson[0][0]);
+                            attachBarChartData(_testOutputJson[0][0]);
+                        }
+                        else{
+                            alert("Fault in script. Error Message: "+response.msg);
+                            closeLiveMonitoring();
+                        }
                     },
         'failure' : function(response){
                         console.log(response);
@@ -144,7 +159,7 @@ function runCustomTest(){
 function attachImages(output){
     isSnapshotsWrapperVisibile(false);
     _snapWidth = 0.8*$("#snapshots-wrapper").width();
-    var testSnaps = JSON.parse(output)["snaps"];
+    var testSnaps = output["snaps"];
     $("#snapshots-wrapper").empty();
     if(testSnaps.length > 0){
         isSnapshotsWrapperVisibile(true);
@@ -160,10 +175,10 @@ function expandPhoto(container){
     window.open($($(container).children()[0]).attr("src"),"_blank");
 }
 
+
 function attachBarChartData(output){
-    var testOutput = JSON.parse(output);
+    var testOutput = output;
     var steps = [];
-    console.log(testOutput);
     for(var i=0 ; i<testOutput["steps"].length ; i++){
         if(testOutput["steps"][i]["record"] == true)
             steps.push(testOutput["steps"][i]);
@@ -225,9 +240,16 @@ function loadTestOutputCharts(steps){
     setChartDimensions("#line-chart-disk",_chartHeight,_chartWidth);
     setChartDimensions("#line-chart-net",_chartHeight,_chartWidth);
 
-    loadBarChart(steps);
+    loadBarCharts();
     loadSteps(steps);
     attachLineChartData();
+}
+
+function loadBarCharts(){
+    for(var i=0 ; i<_testOutputJson.length ; i++){
+        var steps = _testOutputJson[i][0]['steps'];
+        loadBarChart(steps,i);
+    }
 }
 
 function attachLineChartData(){
@@ -249,26 +271,26 @@ function setCpuChartInfo(){
     var cpuChartHtml = "";
     $("#cpu-chart-info").html("");
     for(var i=0 ; i<cpuCoreCount ; i++){
-        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+"</div></div>\n";
+        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+" (%)</div></div>\n";
     }
     $("#cpu-chart-info").html(cpuChartHtml);
 }
 
 function setRamChartInfo(){
-    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM</div></div>\n")
+    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM (%)</div></div>\n")
 }
 
 function setNetChartInfo(){
     netChartInfoHtml = "";
-    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd</div></div>\n";
-    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd (KB/s)</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent (KB/s)</div></div>\n";
     $("#net-chart-info").html(netChartInfoHtml);
 }
 
 function setDiskChartInfo(){
     var diskChartInfoHtml = "";
-    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#3ff4cb\"></div><div class=\"meter-info\">Read Rate</div></div>\n";
-    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#f43f68\"></div><div class=\"meter-info\">Write Rate</div></div>\n";
+    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#3ff4cb\"></div><div class=\"meter-info\">Read Rate (KB/s)</div></div>\n";
+    diskChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:#f43f68\"></div><div class=\"meter-info\">Write Rate (KB/s)</div></div>\n";
     $("#disk-chart-info").html(diskChartInfoHtml);
 }
 
@@ -280,18 +302,25 @@ function setChartDimensions(chartCanvas, height, width){
 function loadSteps(steps){
     $("#steps-list").empty();
     for(var i=0 ; i<steps.length ; i++){
+        var action = "Action"
         if(steps[i].action=="go_to")
-            var action = "Navigate to";
+            action = "Page navigate: ";
+        else if(steps[i].action=="button_click")
+            action = "Button click: ";
+        else if(steps[i].action=="fill_form_element")
+            action = "Fill form element: ";
+        else if(steps[i].action=="form_submit")
+            action = "Submit form: ";
         $("#steps-list").append($("<div class=\"steps-list-item\"><b>STEP "+(i+1)+":</b> "+action+" <b>"+steps[i].target+"</b></div>"));
     }
 }
 
-function loadBarChart(steps){
-    $("#bar-chart").remove();
-    $("<canvas id=\"bar-chart\" class=\"perf-test-chart\"></canvas>").insertAfter("#test-steps-header");
+function loadBarChart(steps,index){
+    $("#bar-chart-"+index.toString()).remove();
+    $("<canvas id=\"bar-chart-"+index.toString()+"\" class=\"perf-test-chart\"></canvas>").insertAfter("#test-steps-header");
     labels = [];
     steps_duration = [];
-    setChartDimensions("#bar-chart",50+50*steps.length,300);
+    setChartDimensions("#bar-chart-"+index.toString(),50+50*steps.length,300);
     for(var i=0 ; i<steps.length ; i++){
         var date1 = new Date(steps[i]["startTime"]);
         var date2 = new Date(steps[i]["endTime"]);
@@ -311,10 +340,26 @@ function loadBarChart(steps){
             },
         ]
     };
-    var ctx = $("#bar-chart").get(0).getContext("2d");
+    var ctx = $("#bar-chart-"+index.toString()).get(0).getContext("2d");
     new Chart(ctx).HorizontalBar(data, {
         barShowStroke: false,
     });
+}
+
+function cleanLabels(labels){
+    var newLabels = [];
+    for(var i=0 ; i<labels.length ; i++){
+        if(i%(Math.round(labels.length/5)) == 0){
+            newLabels.push(i);
+        }
+        else if(i==(labels.length-1)){
+            newLabels.push(i);
+        }
+        else{
+            newLabels.push("");
+        }
+    }
+    return newLabels;
 }
 
 function loadLineChart_CPU(){
@@ -347,7 +392,7 @@ function loadLineChart_CPU(){
     }
 
     var data = {
-        labels : labels,
+        labels : cleanLabels(labels),
         datasets: datasets
     };
     var ctx = $("#line-chart-cpu").get(0).getContext("2d");
@@ -366,7 +411,7 @@ function loadLineChart_RAM(){
     }
 
     var data = {
-        labels: labels,
+        labels: cleanLabels(labels),
         datasets: [
             {
                 fillColor: 'rgba(153,163,103,0.2)',
@@ -395,7 +440,7 @@ function loadLineChart_Disk(){
     }
 
     var data = {
-        labels: labels,
+        labels: cleanLabels(labels),
         datasets: [
             {
                 fillColor: "rgba(63,244,203,0.2)",
@@ -432,7 +477,7 @@ function loadLineChart_Net(){
     }
 
     var data = {
-        labels: labels,
+        labels: cleanLabels(labels),
         datasets: [
             {
                 fillColor: "rgba(152,19,0,0.3)",
@@ -602,7 +647,7 @@ function makeChartSummaryJson(){
     }
 
     snapContainers = $("#snapshots-wrapper").children();
-    for(var i=1 ; i<snapContainers.length ; i++){
+    for(var i=0 ; i<snapContainers.length ; i++){
         jsonData["snaps_id"].push($($(snapContainers[i]).children()[0]).attr("id"));
     }
 

@@ -40,11 +40,16 @@
                             <button id="run-test-btn" type="button" class="btn btn-default" onclick="runCustomTest()"><i
                                     style="margin-right:20px" class="fa fa-play" aria-hidden="true"></i>RUN
                             </button>
+                            <div id="instances-count-area">
+                                <i style="margin-right:5px; font-size:1.1em" class="fa fa-clone instances-count-icon" aria-hidden="true" onclick="increaseInstanceCount();"></i>
+                                <div id="instances-count">1</div>
+                            </div>
                             <input id="test-name-input" type="text" class="form-control"
                                    placeholder="Enter the test name here..." onsubmit="saveTest()">
                             <button id="save-test-btn" class="btn btn-default" type="button" onclick="saveTest()"><i
                                     style="margin-right:20px" class="fa fa-floppy-o" aria-hidden="true"></i>SAVE TEST
                             </button>
+
                         </div>
                     </div>
 
@@ -64,7 +69,6 @@
 
                     <div id="bar-chart-wrapper">
                         <h4 id="test-steps-header">Test Steps</h4>
-                        <canvas id="bar-chart" class="perf-test-chart"></canvas>
                         <div id="steps-list" class="perf-test-chart"></div>
                     </div>
 
@@ -83,8 +87,10 @@
                         <div id="net-chart-info"></div>
                     </div>
 
+                    <h4 id="snapshots-header"><i style="margin-right:20px" class="fa fa-camera" aria-hidden="true"></i>Snapshots</h4>
+
                     <div id="snapshots-wrapper" class="chart-wrapper">
-                        <h4>Snapshots</h4>
+
                     </div>
 
                     <div id="save-wrapper" class="chart-wrapper">

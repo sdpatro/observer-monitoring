@@ -56,8 +56,16 @@ function loadRemoteMachines(remoteMachines){
         currentStamp = new Date();
         timeDiff = currentStamp-lastOnlineStamp;
         var status = "online";
+
+        if($("#sys-offline-msg")!=null){
+            $("#sys-offline-msg").css("display","none")
+        }
+
         if(timeDiff/1000 > 10){
             status = "offline";
+            if($("#sys-offline-msg")!=null){
+                $("#sys-offline-msg").css("display","")
+            }
         }
         var $item = getListItem(remoteMachines[i].name,remoteMachines[i].ip,status);
         $("#machines-remote").append($item);
