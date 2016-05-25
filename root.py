@@ -3,8 +3,7 @@ import threading
 
 __author__ = 'sdpatro'
 from PIL import Image
-import sys
-import StringIO
+import os
 from tornado import gen
 import datetime
 import base64
@@ -680,8 +679,6 @@ class SimHandler(RequestHandler):
                 test_code = self.get_argument("testCode", None)
                 instances_count = int(self.get_argument("instancesCount", None))
                 status = "success"
-                if test_code is None:
-                    self.finish((dict(status="failure", output="Missing argument in request")))
                 queue_list = []
                 test_error_msg = None
                 test_error_queue = Queue.Queue()

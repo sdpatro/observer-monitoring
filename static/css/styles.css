@@ -167,13 +167,25 @@ h3{
     margin-right: 10px;
 }
 
-#days-duration-input, #test-name-input{
+#days-duration-input{
     border-top-left-radius: 0px;
     border-bottom-left-radius: 0px;
     border-top-right-radius: 0px;
     border-bottom-right-radius: 0px;
     display: inline-block;
     width: 40%;
+    border: 2px solid #dedede;
+    background: #444444;
+    color: #dedede;
+}
+
+#test-name-input{
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    display: inline-block;
+    width: 200px;
     border: 2px solid #dedede;
     background: #444444;
     color: #dedede;
@@ -329,4 +341,16 @@ h3{
 
 .demand-stats{
     margin-top: 10px;
+}
+
+#speed-limit{
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    display: inline-block;
+    width: 75px;
+    border: 2px solid #dedede;
+    background: #444444;
+    color: #dedede;
 }

@@ -51,7 +51,7 @@ cpuColors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
 ramColor = "#99a367";
 storageColor = "#3ff4cb";
 netColor = ["#991300","#262835"];
-_graphType = false;
+_graphType = true;
 
 function fetchUtilization(machineName){
     var dataJson = {'action':'GET_COST_STATS','machine':machineName};

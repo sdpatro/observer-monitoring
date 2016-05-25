@@ -18,7 +18,7 @@ function initiateStat(){
     getStatData(document.cookie);
 }
 
-_graphType = false;
+_graphType = true;
 
 statData = [];
 cpuData = [[],[],[],[]];
