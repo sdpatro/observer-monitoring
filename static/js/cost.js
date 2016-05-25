@@ -6,16 +6,14 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     _chartWidth = 800;
     fetchExtrapolatedCharts(1);
     fetchUtilization(document.cookie);
+    _rowWidth = 0.8*$("#cpu-stats").width();
 });
 
-statData = [];
-cpuData = [[],[],[],[]];
-ramData = [];
-netData = [[],[]];
-storageData = [];
 _chartHeight = 0;
 _chartWidth = 0;
 _instancePricing = null;
+_currentInstanceType = null;
+_daysDuration = null;
 
 function fetchInstanceTypes(providerName){
     var dataJson = {'action':'FETCH_INSTANCE_PRICING','provider_name':providerName};
@@ -43,7 +41,17 @@ function emptyRecords(){
     ramData = [];
     netData = [[],[]];
     storageData = [];
+    cpuData_disjoint = [[],[],[],[]];
+    ramData_disjoint = [];
+    netData_disjoint = [[],[]];
+    storageData_disjoint = [];
 }
+
+cpuColors = ["#ee6146","#ffd557","#00ffec","#00ff90"];
+ramColor = "#99a367";
+storageColor = "#3ff4cb";
+netColor = ["#991300","#262835"];
+_graphType = false;
 
 function fetchUtilization(machineName){
     var dataJson = {'action':'GET_COST_STATS','machine':machineName};
@@ -83,13 +91,24 @@ function fetchExtrapolatedCharts(daysDuration){
                     if(response['status']=='success')
                     {
                         emptyRecords();
+
                         statData = response['stat_data'];
                         statData.forEach(generateData_CPU);
                         statData.forEach(generateData_RAM);
                         statData.forEach(generateData_Net);
                         statData.forEach(generateData_Storage);
-                        attachCpuEstimationChart(statData);
+
+                        ramData_disjoint = cleanTimeData(ramData,60000);
+                        _cpuCoreCount = cpuCoreCount;
+                        for(var i=0 ; i<cpuCoreCount ; i++){
+                            cpuData_disjoint[i] = cleanTimeData(cpuData[i],60000);
+                        }
+                        storageData_disjoint = cleanTimeData(storageData,60000);
+                        netData_disjoint[0] = cleanTimeData(netData[0],60000);
+                        netData_disjoint[1] = cleanTimeData(netData[1],60000);
                         setNetDemandStats(response['misc_data']);
+                        setDemandStats();
+                        showGraphs(_graphType);
                     }
                     else{
                         alert(response['message']);
@@ -102,190 +121,13 @@ function fetchExtrapolatedCharts(daysDuration){
     });
 }
 
-
-function setCpuOptimization(){
-    if(Math.abs(_cpuDataMedian-_cpuDataMean) > 10){ // Checking skewness of data
-        cpuCentralValue = _cpuDataMedian;
-    }
-    else{
-        cpuCentralValue = _cpuDataMean;
-    }
-
-    var cpuUsageMessage = "";
-    var cpuSuggestedChange = 0;
-
-    if(cpuCentralValue < 30){
-        cpuUsageMessage = "Under used CPU";
-        cpuSuggestedChange = -1.5;
-    }
-    else if(cpuCentralValue>=31 && cpuCentralValue<=50){
-        cpuUsageMessage = "Light usage of CPU";
-        cpuSuggestedChange = -1;
-    }
-    else if(cpuCentralValue>50 && cpuCentralValue<=75){
-        cpuUsageMessage = "Optimal usage";
-        cpuSuggestedChange = 0;
-    }
-    else{
-        cpuUsageMessage = "Very high usage"
-        cpuSuggestedChange = 1;
-    }
-
-    var suggestedInstanceTypes = [];
-    console.log("_currentInstance: "+_currentInstanceType);
-    var currentInstanceTypeIndex = getCurrentInstanceTypeIndex(_currentInstanceType);
-    console.log("currentInstanceTypeIndex: "+currentInstanceTypeIndex);
-
-    currentInstanceTypeObject = _instancePricing['instances'][currentInstanceTypeIndex];
-
-    switch(cpuSuggestedChange){
-        case -1.5: if(currentInstanceTypeObject['vCpu']==2){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 1){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==4){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 2 || _instancePricing['instances'][i]['vCpu'] == 1){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==8){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 4 || _instancePricing['instances'][i]['vCpu'] == 2){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   break;
-        case -1:  if(currentInstanceTypeObject['vCpu']==2){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 1){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==4){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 2){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==8){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 4){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   break;
-                  break;
-        case 1:   if(currentInstanceTypeObject['vCpu']==2){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 4){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==4){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 8){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   else if(currentInstanceTypeObject['vCpu']==1){
-                        for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                            if(_instancePricing['instances'][i]['vCpu'] == 2){
-                                suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                            }
-                        }
-                   }
-                   break;
-                 break;
-    }
-
-    var optimizationMessageString = cpuUsageMessage;
-    for(var i=0 ; i<suggestedInstanceTypes.length ; i++){
-        optimizationMessageString += " "+suggestedInstanceTypes[i];
-    }
-
-    $("#cpu_optimizations").text(optimizationMessageString);
-}
-
-function setRamOptimization(){
-    if(Math.abs(_ramDataMedian-_ramDataMean) > 10){ // Checking skewness of data
-        ramCentralValue = _ramDataMedian;
-    }
-    else{
-        ramCentralValue = _ramDataMean;
-    }
-
-    var ramUsageMessage = "";
-    var ramSuggestedChange = 0;
-
-    if(ramCentralValue < 30){
-        ramUsageMessage = "Under used RAM";
-        ramSuggestedChange = -1.5;
-    }
-    else if(ramCentralValue>=31 && ramCentralValue<=50){
-        ramUsageMessage = "Light usage of RAM";
-        ramSuggestedChange = -1;
-    }
-    else if(ramCentralValue>50 && ramCentralValue<=75){
-        ramUsageMessage = "Optimal usage";
-        ramSuggestedChange = 0;
-    }
-    else{
-        ramUsageMessage = "Very high usage"
-        ramSuggestedChange = 1;
-    }
-
-    var suggestedInstanceTypes = [];
-    console.log("_currentInstance: "+_currentInstanceType);
-    var currentInstanceTypeIndex = getCurrentInstanceTypeIndex(_currentInstanceType);
-    console.log("currentInstanceTypeIndex: "+currentInstanceTypeIndex);
-
-    currentInstanceTypeObject = _instancePricing['instances'][currentInstanceTypeIndex];
-
-    switch(ramSuggestedChange){
-        case -1.5:
-                    for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                        if(_instancePricing['instances'][i]['memory'] < 0.5*currentInstanceTypeObject['memory']){
-                            suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                        }
-                    }
-
-                   break;
-        case -1:  for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                        if(_instancePricing['instances'][i]['memory'] < (0.75*currentInstanceTypeObject['memory'])){
-                            suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                        }
-                   }
-                   break;
-        case 1:   for(var i=0 ; i<_instancePricing['instances'].length ; i++){
-                        if(_instancePricing['instances'][i]['memory'] > 1.25*currentInstanceTypeObject['memory']){
-                            suggestedInstanceTypes.push(_instancePricing['instances'][i]['name']);
-                        }
-                    }
-                   break;
-    }
-
-    var optimizationMessageString = ramUsageMessage;
-    for(var i=0 ; i<suggestedInstanceTypes.length ; i++){
-        optimizationMessageString += " "+suggestedInstanceTypes[i];
-    }
-
-    $("#ram_optimizations").text(optimizationMessageString);
+function setDemandStats(){
+    setCpuDemandStats();
+    setRamDemandStats();
 }
 
 function setCpuDemandStats(){
     cpuDataNormalised = [];
-    console.log(_cpuCoreCount+" "+cpuDataNormalised);
     _cpuDataMean = 0;
     for(var i=0 ; i<cpuData[0].length ; i++){
         temp_sum = 0;
@@ -314,12 +156,17 @@ function setCurrentInstanceType(el){
     $("#current-instance-type").text(el.innerText);
     $("#current-instance-type-details").html(getInstanceDetails(el.innerText));
     _currentInstanceType = el.innerText;
-    setCpuOptimization();
-    setRamOptimization();
-    computeCost();
 }
 
 function computeCost(){
+    if(_currentInstanceType === undefined || _currentInstanceType === null){
+        alert("Instance type not set.");
+        return;
+    }
+    if(!_daysDuration){
+        alert("Days' duration is not set.");
+        return;
+    }
     currentInstanceTypeObject = _instancePricing['instances'][getCurrentInstanceTypeIndex(_currentInstanceType)];
     hourlyCost = currentInstanceTypeObject['hourly-cost'];
     instanceMonthlyCost = 730*hourlyCost;
@@ -444,14 +291,13 @@ function attachCpuEstimationChart(records){
     });
 }
 
+
 function generateData_CPU(record){
-    _cpuCoreCount = record['cpu'].length;
-    for(var i=0 ; i<_cpuCoreCount ; i++){
+    cpuCoreCount = record['cpu'].length;
+    for(var i=0 ; i<cpuCoreCount ; i++){
         cpuData[i].push([Date.parse(record["date"]),record['cpu'][i]]);
     }
-
 }
-
 function generateData_RAM(record){
     ramData.push([Date.parse(record["date"]),record['ram']]);
 }
@@ -463,4 +309,275 @@ function generateData_Net(record){
 
 function generateData_Storage(record){
     storageData.push([Date.parse(record["date"]),record['disk_used']/(1024*1024*1024)]);
+}
+
+function cleanTimeData(dataArray,gradient){
+    curTimeStamp = dataArray[0][0];
+    var newDataArray = [];
+    for(var i=0 ; i<dataArray.length-1 ; i++){
+        newDataArray.push(dataArray[i]);
+        var delta = Math.round((dataArray[i+1][0]-dataArray[i][0])/gradient) - 1;
+        if(delta > 0){
+            for(var j=0 ; j<delta ; j++){
+                newDataArray.push(null);
+            }
+        }
+    }
+    newDataArray.push(dataArray[i]);
+    return newDataArray;
+}
+
+function toggleDisjointGraphs(){
+    if(_graphType == true){
+        _graphType = false;
+    }
+    else{
+        _graphType = true;
+    }
+    showGraphs(_graphType);
+}
+
+function showGraphs(_graphType){
+    if(_graphType == true){
+        renderGraphs();
+    }
+    else{
+        renderGraphs_disjoint();
+    }
+    setChartsInfo();
+}
+
+function renderGraphs_disjoint(){
+    var cpuSeries = [];
+    for(var i=0 ; i<cpuData_disjoint.length ; i++){
+        cpuSeries.push({'values':cpuData_disjoint[i],"line-color":cpuColors[i],"line-width":2});
+    }
+    // CPU
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": cpuSeries
+    };
+    zingchart.render({
+        id:'cpu_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+    // RAM
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":ramData_disjoint,
+            "line-color":ramColor}
+      ]
+    };
+    zingchart.render({
+        id:'ram_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+    // Net
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":netData_disjoint[0],"line-color":netColor[0]},
+        {"values":netData_disjoint[1],"line-color":netColor[1]}
+      ]
+    };
+    zingchart.render({
+        id:'net_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+    // Storage
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":storageData_disjoint,"line-color":storageColor}
+      ]
+    };
+    zingchart.render({
+        id:'storage_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+}
+
+function renderGraphs(){
+    var cpuSeries = [];
+    for(var i=0 ; i<cpuData.length ; i++){
+        cpuSeries.push({'values':cpuData[i],"line-color":cpuColors[i],"line-width":2});
+    }
+    // CPU
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": cpuSeries
+    };
+    zingchart.render({
+        id:'cpu_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+    // RAM
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":ramData,
+         "line-color":ramColor}
+      ]
+    };
+    zingchart.render({
+        id:'ram_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+    // Net
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":netData[0],"line-color":netColor[0]},
+        {"values":netData[1],"line-color":netColor[1]}
+      ]
+    };
+    zingchart.render({
+        id:'net_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+    // Storage
+    var chartData={
+      "type": "line",
+      "background-color":"#333333",
+      "utc":true,
+      "plotarea":{
+        "adjust-layout":true
+        },
+      "scale-x":{
+        "transform":{
+          "type":"date"
+        }
+      },
+      "series": [
+        {"values":storageData,"line-color":storageColor}
+      ]
+    };
+    zingchart.render({
+        id:'storage_chart',
+        data:chartData,
+        height:400,
+        width:_rowWidth
+    });
+
+}
+
+function setChartsInfo(){
+    setCpuChartInfo();
+    setNetChartInfo();
+    setStorageChartInfo();
+    setRamChartInfo();
+}
+
+function setCpuChartInfo(){
+    var cpuChartHtml = "";
+    $("#cpu-chart-info").html("");
+    for(var i=0 ; i<cpuCoreCount ; i++){
+        cpuChartHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+cpuColors[i]+"\"></div><div class=\"meter-info\">CPU"+i+" (%)</div></div>\n";
+    }
+    $("#cpu-chart-info").html(cpuChartHtml);
+}
+
+function setRamChartInfo(){
+    $("#ram-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+ramColor+"\"></div><div class=\"meter-info\">RAM (%)</div></div>\n")
+}
+
+function setNetChartInfo(){
+    netChartInfoHtml = "";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[0]+"\"></div><div class=\"meter-info\">Data Recvd (MB)</div></div>\n";
+    netChartInfoHtml += "<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+netColor[1]+"\"></div><div class=\"meter-info\">Data Sent (MB)</div></div>\n";
+    $("#net-chart-info").html(netChartInfoHtml);
+}
+
+function setStorageChartInfo(){
+    $("#storage-chart-info").html("<div class=\"chart-info badge badge-default\"><div class=\"meter-color\" style=\"background-color:"+storageColor+"\"></div><div class=\"meter-info\">Storage Used (GB)</div></div>\n");
 }

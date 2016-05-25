@@ -205,7 +205,6 @@ function renderGraphs(){
 }
 
 function renderGraphs_disjoint(){
-    console.log("renderGraphs_disjoint");
     var cpuSeries = [];
     for(var i=0 ; i<cpuData_disjoint.length ; i++){
         cpuSeries.push({'values':cpuData_disjoint[i],"line-color":cpuColors[i],"line-width":2});

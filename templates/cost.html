@@ -55,38 +55,29 @@
                         <button id="set-duration-btn" class="btn btn-default" type="button" onclick="setEstimationDuration();">Set Duration
                         </button>
                     </div>
-                    <h2>CPU demand curve</h2>
-                    <div id="cpu_demand_curve"></div>
-                    <div id="cpu_demand_stats"></div>
-                    <div id="cpu_optimizations"></div>
-                    <h2>RAM demand curve</h2>
-                    <div id="ram_demand_curve"></div>
-                    <div id="ram_demand_stats"></div>
-                    <div id="ram_optimizations"></div>
-                    <h2>Network demand curve</h2>
-                    <div id="net_demand_curve"></div>
-                    <div id="net_demand_stats"></div>
-                    <div id="net_optimizations"></div>
 
                     <div id="cpu-stats" class="row">
-                        <h3><i style="margin-right:20px" class="fa fa-building" aria-hidden="true"></i>CPU Usage Stats</h3>
+                        <h3>CPU Demand Curve</h3>
                         <div id='cpu_chart'></div>
                         <div id='cpu-chart-info'></div>
+                        <div id="cpu_demand_stats" class="demand-stats"></div>
                     </div>
                     <div class="row">
-                        <h3><i style="margin-right:20px" class="fa fa-barcode" aria-hidden="true"></i>RAM Usage Stats</h3>
+                        <h3>RAM Demand Curve</h3>
                         <div id='ram_chart'></div>
                         <div id='ram-chart-info'></div>
+                        <div id="ram_demand_stats" class="demand-stats"></div>
                     </div>
                     <div class="row">
-                        <h3><i style="margin-right:20px" class="fa fa-wifi" aria-hidden="true"></i>Network Usage Stats</h3>
+                        <h3>Network Demand Curve</h3>
                         <div id='net_chart'></div>
                         <div id='net-chart-info'></div>
+                        <div id="net_demand_stats" class="demand-stats"></div>
                     </div>
-                    <div class="row">
-                        <h3><i style="margin-right:20px" class="fa fa-hdd-o" aria-hidden="true"></i>Storage Usage Stats</h3>
+                    <div class="row" style="display: none">
+                        <h3>Storage Demand Curve</h3>
                         <div id='storage_chart'></div>
-                        <div id='storage-chart-info'></div>
+                        <div id='storage-chart-info' class="demand-stats"></div>
                     </div>
                     <div class="row">
                         <button class="btn btn-default" onclick="toggleDisjointGraphs();">Toggle Disjoint Areas</button>
@@ -94,7 +85,8 @@
 
                 </div>
                 <div class="row">
-                    <h2>Total Cost</h2>
+                    <h2><i style="margin-right:20px" class="fa fa-credit-card" aria-hidden="true"></i>Total Cost</h2>
+                    <button id="compute-cost-btn" onclick="computeCost()" class="btn btn-default">Compute Cost</button>
                     <h4 id="instance-reservation-cost"></h4>
                     <h4 id="bandwidth-data-cost"></h4>
                     <h3 id="monthly-cost"></h3>

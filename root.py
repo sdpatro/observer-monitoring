@@ -922,8 +922,8 @@ class ComputeHandler(RequestHandler):
                             while int(get_delta_time_seconds(stat_records)) > 60:
                                 stat_records = stat_records[:-1]
 
-                        if int(len(stat_records) / 250) > 0:
-                            minute_gradient = int(len(stat_records) / 250)
+                        if int(len(stat_records) / 1000) > 0:
+                            minute_gradient = int(len(stat_records) / 1000)
                         else:
                             minute_gradient = 1
 
