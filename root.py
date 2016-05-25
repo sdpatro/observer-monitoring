@@ -275,7 +275,8 @@ class ObserverDriver:
                 pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="form_submit", target=form_element_id, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                dict(action="form_submit", target=form_element_id, startTime=start_time.isoformat(),
+                     endTime=end_time.isoformat(),
                      record=record))
 
     def fill_form_element(self, form_element_id, input_text, record=False):
@@ -286,7 +287,8 @@ class ObserverDriver:
             pass
         end_time = datetime.datetime.now()
         self.steps.append(
-                dict(action="fill_form_element", target=form_element_id, startTime=start_time.isoformat(), endTime=end_time.isoformat(),
+                dict(action="fill_form_element", target=form_element_id, startTime=start_time.isoformat(),
+                     endTime=end_time.isoformat(),
                      record=record))
 
     def close_driver(self):
@@ -640,9 +642,9 @@ test_output = []
 output_queue = Queue.Queue()
 test_error_queue = Queue.Queue()
 
-def runTests(test_code, test_name, machine_name, output_queue, test_error_queue):
 
-    driver = ObserverDriver(webdriver.Chrome(), test_name, machine_name)
+def runTests(test_code, test_name, machine_name, output_queue, test_error_queue):
+    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
     try:
         exec test_code
     except Exception as e:
@@ -690,7 +692,8 @@ class SimHandler(RequestHandler):
                         thread_instances.append(
                                 threading.Thread(target=runTests,
                                                  args=(
-                                                 test_code, test_name, machine_name, queue_list[i], test_error_queue)))
+                                                     test_code, test_name, machine_name, queue_list[i],
+                                                     test_error_queue)))
                         thread_instances[i].start()
                     for i in range(0, instances_count):
                         thread_instances[i].join()

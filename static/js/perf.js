@@ -247,8 +247,13 @@ function loadTestOutputCharts(steps){
 
 function loadBarCharts(){
     for(var i=0 ; i<_testOutputJson.length ; i++){
-        var steps = _testOutputJson[i][0]['steps'];
-        loadBarChart(steps,i);
+        steps = _testOutputJson[i][0]['steps'];
+        var recorded_steps = [];
+        for(var j=0 ; j<steps.length ; j++){
+            if(steps[j]['record']==true)
+            recorded_steps.push(steps[j]);
+        }
+        loadBarChart(recorded_steps,i);
     }
 }
 
