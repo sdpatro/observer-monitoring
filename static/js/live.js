@@ -1,7 +1,7 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
-    if(document.cookie != ""){
+    if(getCookie("machine-name") != null){
         initiateLive();
     }
     else{

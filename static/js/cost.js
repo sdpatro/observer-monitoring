@@ -1,12 +1,19 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
+
+  if(getCookie("machine-name") != null)
+  {
     fetchInstanceTypes('amazon-ec2');
     _chartHeight = 400;
     _chartWidth = 800;
     fetchExtrapolatedCharts(1);
     fetchUtilization(getCookie("machine-name"));
     _rowWidth = 0.8*$("#cpu-stats").width();
+  }
+  else{
+    showIdle(true);
+  }
 });
 
 _chartHeight = 0;

@@ -16,7 +16,10 @@ function pageInit(){
         document.cookie = "machine-name=remote-laptop";
         _common = {"currentMachine":getCookie("machine-name")};
     }
-    $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+getCookie("machine-name"));
+    var headerMachineName = getCookie("machine-name");
+    if(headerMachineName == null)
+        headerMachineName = "";
+    $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+headerMachineName);
     setPageActive();
 }
 
@@ -69,7 +72,7 @@ function loadRemoteMachines(remoteMachines){
 
         if(timeDiff/1000 > 10){
             status = "offline";
-            if($("#sys-offline-msg")!=null && remoteMachines[i].name==_common["currentMachine"]){
+            if($("#sys-offline-msg")!=null && remoteMachines[i].name==getCookie("machine-name")){
                 $("#sys-offline-msg").css("display","")
             }
         }
@@ -99,7 +102,6 @@ function changeMachine(machineName,machineIP){
 }
 
 function showIdle(status){
-    console.log("showIdle "+status);
     if(status == true) // Show idle
     {
         $("#main-area").css('display','none');
