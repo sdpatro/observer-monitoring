@@ -133,7 +133,7 @@ def condense(stat_coll, live_coll):
     while live_coll.count() > 120:
         live_data = live_coll.find().limit(60)
 
-        cpu_core_count = len(((live_data[0])['cpu']));
+        cpu_core_count = len(((live_data[0])['cpu']))
         cpu_clear = []
 
         for i in range(0, cpu_core_count):
@@ -643,7 +643,7 @@ test_error_queue = Queue.Queue()
 
 
 def runTests(test_code, test_name, machine_name, output_queue, test_error_queue):
-    driver = ObserverDriver(webdriver.PhantomJS(), test_name, machine_name)
+    driver = ObserverDriver(webdriver.Chrome(), test_name, machine_name)
     try:
         exec test_code
     except Exception as e:

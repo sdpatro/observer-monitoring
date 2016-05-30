@@ -1,7 +1,6 @@
 $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     $('.row-offcanvas').toggleClass('active');
   });
-    console.log("document cookie "+document.cookie);
     if(document.cookie != ""){
         initiateLive();
     }
@@ -35,22 +34,40 @@ function convert_to_timedelta(seconds){
 
     var timedelta_string = "";
     if(years > 0){
-        timedelta_string += years + " years "
+        if(years==1)
+            timedelta_string += years + " year "
+        else
+            timedelta_string += years + " years "
     }
     if(months > 0){
-        timedelta_string += months + " months "
+        if(months == 1)
+            timedelta_string += months + " month "
+        else
+            timedelta_string += months + " months "
     }
     if(days > 0){
-        timedelta_string += days + " days "
+        if(days == 1)
+            timedelta_string += days + " day "
+        else
+            timedelta_string += days + " days "
     }
     if(hours > 0){
-        timedelta_string += hours + " hours "
+        if(hours == 1)
+            timedelta_string += hours + " hour "
+        else
+            timedelta_string += hours + " hours "
     }
     if(minutes > 0){
-        timedelta_string += minutes + " minutes "
+        if(minutes == 1)
+            timedelta_string += minutes + " minute "
+        else
+            timedelta_string += minutes + " minutes "
     }
     if(seconds > 0){
-        timedelta_string += seconds + " seconds "
+        if(seconds == 1)
+            timedelta_string += seconds + " second "
+        else
+            timedelta_string += seconds + " seconds "
     }
 
     return timedelta_string;
@@ -83,7 +100,6 @@ function runGraph_CPU(){
             for(var i=0 ; i<cpuCoreCount ; i++)
             {
                 smoothie.addTimeSeries(cpuTimeSeries[i],{'strokeStyle':colors[i],'fillStyle':fillStyles[i]});
-                console.log("TimeSeries added: "+i);
                 _isCpuTimeSeriesAdded = true;
             }
         }
@@ -178,7 +194,7 @@ function runGraph_net(){
 }
 
 function pollLiveData(){
-    data = {'client-name':_common["currentMachine"],'action':'GET_LIVE_DATA'};
+    data = {'client-name':getCookie("machine-name"),'action':'GET_LIVE_DATA'};
     $.ajax({
         'data':data,
         'type' : 'post',
@@ -186,7 +202,8 @@ function pollLiveData(){
         'success':function(response){
                     liveDataCache.push(response);
                     if(liveDataCache.length > 60){
-                        liveDataCache = liveDataCache.splice(0,1);
+                        liveDataCache = liveDataCache.slice(liveDataCache.length-3,liveDataCache.length);
+                        console.log(liveDataCache[0]['uptime']);
                     }
                     setTimeout(function(){pollLiveData()},500);
                     update_uptime();

@@ -14,8 +14,8 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
 });
 
 function initiateStat(){
-    updateSpecs(document.cookie);
-    getStatData(document.cookie);
+    updateSpecs(getCookie("machine-name"));
+    getStatData(getCookie("machine-name"));
 }
 
 _graphType = true;

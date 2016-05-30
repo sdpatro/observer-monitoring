@@ -5,7 +5,7 @@ $(document).ready(function(){  $('[data-toggle=offcanvas]').click(function() {
     _chartHeight = 400;
     _chartWidth = 800;
     fetchExtrapolatedCharts(1);
-    fetchUtilization(document.cookie);
+    fetchUtilization(getCookie("machine-name"));
     _rowWidth = 0.8*$("#cpu-stats").width();
 });
 
@@ -81,7 +81,7 @@ function setEstimationDuration(){
 }
 
 function fetchExtrapolatedCharts(daysDuration){
-    var dataJson = {'action':'FETCH_ESTIMATED_CHARTS','machine':document.cookie,'days_duration':daysDuration};
+    var dataJson = {'action':'FETCH_ESTIMATED_CHARTS','machine':getCookie("machine-name"),'days_duration':daysDuration};
     $.ajax({
         'type':'POST',
         'url': _computeEndPoint,

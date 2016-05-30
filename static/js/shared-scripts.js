@@ -13,11 +13,17 @@ _currentPage= loc.substring(loc.lastIndexOf('/')+1,loc.length);
 function pageInit(){
     remoteMachinesUpdater();
     if(document.cookie == null){
-        document.cookie = "remote-laptop";
-        _common = {"currentMachine":document.cookie};
+        document.cookie = "machine-name=remote-laptop";
+        _common = {"currentMachine":getCookie("machine-name")};
     }
-    $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+document.cookie);
+    $("#currentMachineHeader").html("<i style=\"margin-right:5px\" class=\"fa fa-server\" aria-hidden=\"true\"></i> "+getCookie("machine-name"));
     setPageActive();
+}
+
+function getCookie(name) {
+  var value = "; " + document.cookie;
+  var parts = value.split("; " + name + "=");
+  if (parts.length == 2) return parts.pop().split(";").shift();
 }
 
 function setPageActive(){
@@ -80,15 +86,15 @@ function getListItem(name,ip,status){
         $listItemElement.append($("<i style=\"float:right\" class=\"fa fa-exchange\" aria-hidden=\"true\"></span>"));
     else
         $listItemElement.append($("<i style=\"float:right; visibility:hidden;\" class=\"fa fa-exchange\" aria-hidden=\"true\"></span>"));
-    if(document.cookie == name)
+    if(getCookie("machine-name")==name)
         $listItemElement.addClass("active");
 
-    $listItemElement.append($("<div style=\"float:right; padding-right:10px;\">"+ip+"</div>"));
+    $listItemElement.append($("<div style=\"padding-right:10px;\">"+ip+"</div>"));
     return $listItemElement;
 }
 
 function changeMachine(machineName,machineIP){
-    document.cookie = machineName;
+    document.cookie = "machine-name="+machineName;
     location.reload();
 }
 

@@ -3,11 +3,11 @@ body{
 }
 
 a.list-group-item{
-    width: 95%;
+    width: 100%;
     border-radius: 0;
     background-color: Transparent;
     color: #ffffff;
-    padding: 10px;
+    padding: 7px 10px 7px 10px;
     font-size:0.9em;
     border-top-right-radius: 0px;
     border-bottom-right-radius: 0px;

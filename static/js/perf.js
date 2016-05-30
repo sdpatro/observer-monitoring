@@ -63,7 +63,7 @@ window.onload = function(){
 }
 
 function fetchTestsList(){
-    dataJson = {'action':'FETCH_TESTS_LIST','machine':document.cookie};
+    dataJson = {'action':'FETCH_TESTS_LIST','machine':getCookie("machine-name")};
     $.ajax({
         'type' : 'POST',
         'url' : _apiEndPoint,
@@ -103,7 +103,7 @@ function loadTest(e){
     _currentTestName = $(e).text();
     $('#test-name-header').text(_currentTestName);
     makeTestListItemActive();
-    dataJson = {'action':'FETCH_TEST','machine':document.cookie,'test_name':_currentTestName};
+    dataJson = {'action':'FETCH_TEST','machine':getCookie("machine-name"),'test_name':_currentTestName};
     $.ajax({
         'type' : 'POST',
         'url' : _apiEndPoint,
@@ -130,7 +130,7 @@ function increaseInstanceCount(){
 function runCustomTest(){
     runLiveMonitoring();
     isLiveChartsVisibile(true);
-    dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':document.cookie,'instancesCount':parseInt($("#instances-count").text())};
+    dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':getCookie("machine-name"),'instancesCount':parseInt($("#instances-count").text())};
     $.ajax({
         'type' : 'POST',
         'url' : _simEndPoint,
@@ -213,7 +213,7 @@ function saveTest(){
         return;
 
     }
-    dataJson = {'action':'SAVE_TEST','testName':testName,'testCode':sourceCode,'machine':document.cookie};
+    dataJson = {'action':'SAVE_TEST','testName':testName,'testCode':sourceCode,'machine':getCookie("machine-name")};
     $.ajax({
         'type' : 'POST',
         'url' : _apiEndPoint,
@@ -246,6 +246,9 @@ function loadTestOutputCharts(steps){
 }
 
 function loadBarCharts(){
+    for(var i=0 ; i<10 ; i++){
+           $("#bar-chart-"+i.toString()).remove();
+    }
     for(var i=0 ; i<_testOutputJson.length ; i++){
         steps = _testOutputJson[i][0]['steps'];
         var recorded_steps = [];
@@ -321,7 +324,6 @@ function loadSteps(steps){
 }
 
 function loadBarChart(steps,index){
-    $("#bar-chart-"+index.toString()).remove();
     $("<canvas id=\"bar-chart-"+index.toString()+"\" class=\"perf-test-chart\"></canvas>").insertAfter("#test-steps-header");
     labels = [];
     steps_duration = [];
@@ -621,7 +623,7 @@ function runGraph_net(){
 }
 
 function pollLiveData(){
-    data = {'client-name':_common["currentMachine"],'action':'GET_LIVE_DATA'};
+    data = {'client-name':getCookie("machine-name"),'action':'GET_LIVE_DATA'};
     $.ajax({
         'data':data,
         'type' : 'post',
