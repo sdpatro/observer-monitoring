@@ -130,6 +130,19 @@ function increaseInstanceCount(){
 function runCustomTest(){
     runLiveMonitoring();
     isLiveChartsVisibile(true);
+    var testCodeArray = (_editor.getDoc().getValue()).split("\n");
+    var badCodeFlag = false;
+    for(var i=0 ; i<testCodeArray.length ; i++){
+        if(testCodeArray[i].indexOf("driver.")!=0){
+            badCodeFlag = true;
+        }
+    }
+    if(badCodeFlag)
+    {
+        alert("Script not allowed, please write a valid script.");
+        closeLiveMonitoring();
+        return;
+    }
     dataJson = {'action':'RUN_TEST','testName':_currentTestName,'testCode':_editor.getDoc().getValue(),'machineName':getCookie("machine-name"),'instancesCount':parseInt($("#instances-count").text())};
     $.ajax({
         'type' : 'POST',
