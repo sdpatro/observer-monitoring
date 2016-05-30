@@ -60,25 +60,39 @@ function remoteMachinesUpdater(){
 
 function loadRemoteMachines(remoteMachines){
     $("#machines-remote").empty();
+    var currentSelected = -1;
     for(var i=0 ; i<remoteMachines.length ; i++){
         lastOnlineStamp = new Date(remoteMachines[i]["last_online"]*1000)
         currentStamp = new Date();
         timeDiff = currentStamp-lastOnlineStamp;
-        status = "online";
-
-        if($("#sys-offline-msg")!=null){
-            $("#sys-offline-msg").css("display","none")
-        }
+        var status = "online";
 
         if(timeDiff/1000 > 10){
             status = "offline";
-            if($("#sys-offline-msg")!=null && remoteMachines[i].name==getCookie("machine-name")){
-                $("#sys-offline-msg").css("display","")
-            }
         }
+
+        if(remoteMachines[i].name == getCookie("machine-name")){
+            currentSelected = i;
+        }
+
         var $item = getListItem(remoteMachines[i].name,remoteMachines[i].ip,status);
         $("#machines-remote").append($item);
     }
+
+    if(currentSelected!=-1){
+        lastOnlineStamp = new Date(remoteMachines[currentSelected]["last_online"]*1000)
+        currentStamp = new Date();
+        timeDiff = currentStamp-lastOnlineStamp;
+        if(timeDiff/1000 > 10){
+            if($("#sys-offline-msg")!=null && remoteMachines[i].name==getCookie("machine-name")){
+                $("#sys-offline-msg").css("display","");
+            }
+        }
+        else{
+            $("#sys-offline-msg").css("display","none");
+        }
+    }
+
 }
 
 function getListItem(name,ip,status){
