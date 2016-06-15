@@ -1,12 +1,6 @@
 # observer-monitoring
 A monitoring tool for checking the status of local/remote servers, based on <a href="https://github.com/giampaolo/psutil">psutil</a>, <a href="https://github.com/tornadoweb/tornado">Tornado</a> and <a href="https://github.com/mongodb/mongo">MongoDB</a>.
 
-## Architecture:
-**Remote sender** is supposed to run on the remote system which sends the monitoring data on a per-second basis.
-**Root/central server** has two components:
-* **TCP listener** is the receving endpoint of the TCP connection between the root server and multiple remote senders.
-* **HTTP server** is the website hosting server.
-  
 *Addresses associated with the servers:*
 + **Remote sender** : [REMOTE_IP_ADDRESS]:8888
 + **TCP listener** : [ROOT_IP_ADDRESS]:8889
@@ -35,11 +29,20 @@ Enter preferred NIC:
 eth0
  ```
 ### Dashboard navigation
-++ **Live monitoring** : [ROOT_IP_ADDRESS]:9000/live.html
-++ **Statistical data** : [ROOT_IP_ADDRESS]:9000/stats.html
-++ **Performance testing** : [ROOT_IP_ADDRESS]:9000/perf.html
+++ **Live monitoring** : [ROOT_IP_ADDRESS]:9000/live
+++ **Statistical data** : [ROOT_IP_ADDRESS]:9000/stats
+++ **Performance testing** : [ROOT_IP_ADDRESS]:9000/perf
 
-  
-<a href="http://imgur.com/Ii0TuNt"><img src="http://i.imgur.com/Ii0TuNt.png" title="source: imgur.com" /></a>
-<a href="http://imgur.com/HDGx5VC"><img src="http://i.imgur.com/HDGx5VC.png" title="source: imgur.com" /></a>
-<a href="http://imgur.com/IcCxRBf"><img src="http://i.imgur.com/IcCxRBf.png" title="source: imgur.com" /></a>
+<a href="http://imgur.com/KALI2zL"><img src="http://i.imgur.com/KALI2zL.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/zRYCVqf"><img src="http://i.imgur.com/zRYCVqf.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/oTAL194"><img src="http://i.imgur.com/oTAL194.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/sSYG69F"><img src="http://i.imgur.com/sSYG69F.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/NBlxMlm"><img src="http://i.imgur.com/NBlxMlm.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/SIfXj2z"><img src="http://i.imgur.com/SIfXj2z.png" title="source: imgur.com" /></a>
+<br/>
+<a href="http://imgur.com/WxKtrsf"><img src="http://i.imgur.com/WxKtrsf.png" title="source: imgur.com" /></a>
