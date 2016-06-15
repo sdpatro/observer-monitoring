@@ -1,11 +1,6 @@
 # observer-monitoring
 A monitoring tool for checking the status of local/remote servers, based on <a href="https://github.com/giampaolo/psutil">psutil</a>, <a href="https://github.com/tornadoweb/tornado">Tornado</a> and <a href="https://github.com/mongodb/mongo">MongoDB</a>.
 
-*Addresses associated with the servers:*
-+ **Remote sender** : [REMOTE_IP_ADDRESS]:8888
-+ **TCP listener** : [ROOT_IP_ADDRESS]:8889
-+ **HTTP web server** : [ROOT_IP_ADDRESS]:9000
- 
 ## How-to-run:
 ### Root server 
  Setup root server on a machine of your choice:
@@ -29,9 +24,9 @@ Enter preferred NIC:
 eth0
  ```
 ### Dashboard navigation
-++ **Live monitoring** : [ROOT_IP_ADDRESS]:9000/live
-++ **Statistical data** : [ROOT_IP_ADDRESS]:9000/stats
-++ **Performance testing** : [ROOT_IP_ADDRESS]:9000/perf
++ **Live monitoring** : [ROOT_IP_ADDRESS]:9000/live
++ **Statistical data** : [ROOT_IP_ADDRESS]:9000/stats
++ **Performance testing** : [ROOT_IP_ADDRESS]:9000/perf
 
 <a href="http://imgur.com/KALI2zL"><img src="http://i.imgur.com/KALI2zL.png" title="source: imgur.com" /></a>
 <br/>
